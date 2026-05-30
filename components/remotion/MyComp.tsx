@@ -1,20 +1,24 @@
-// export const MyComp: React.FC<{text: string}> = ({text}) => {
-//   return <div>Hello {text}!</div>;
-// };
+import {AbsoluteFill, OffthreadVideo, useCurrentFrame, interpolate, staticFile} from 'remotion';
 
-import { AbsoluteFill, OffthreadVideo } from "remotion";
+export const MyComp: React.FC<{text: string}> = ({text}) => {
+  const frame = useCurrentFrame();
+  
+  // Text fades in from frame 30–60
+  const opacity = interpolate(frame, [30, 60], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
 
-export const MyComp = () => {
   return (
     <AbsoluteFill>
-      <OffthreadVideo
-        src="/video1.mp4"
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-        }}
-      />
+      {/* Base video */}
+      <OffthreadVideo src={staticFile('video1.mp4')} />
+      {/* Text overlaid on top — previewed live! */}
+      <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center'}}>
+        <div style={{fontSize: 80, color: 'white', opacity}}>
+          {text}
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

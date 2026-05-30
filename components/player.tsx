@@ -7,6 +7,7 @@ export const PlayerComp = () => {
   return (
 <div className="mx-auto w-full max-w-80">
   <Player
+    inputProps={{text : "hello how r u big text and big place "}}
     component={MyComp}
     durationInFrames={900}
     compositionWidth={1080}
