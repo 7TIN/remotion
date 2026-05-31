@@ -2,6 +2,7 @@ import React from 'react';
 import {Composition} from 'remotion';
 // import {MyComposition} from './Composition';
 import {MyComp} from './MyComp';
+import {transcript} from '@/data/transcript';
 
 
 // export const RemotionRoot: React.FC = () => {
@@ -23,7 +24,7 @@ import {MyComp} from './MyComp';
 export const MyVideo = () => {
   return (
     <>
-      <Composition component={MyComp} durationInFrames={120} width={1920} height={1080} fps={30} id="my-comp" defaultProps={{text: 'World'}} />
+      <Composition component={MyComp} durationInFrames={1042} width={1080} height={1920} fps={30} id="my-comp" defaultProps={{transcript}} />
     </>
   );
 };

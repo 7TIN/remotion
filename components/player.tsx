@@ -10,7 +10,7 @@ export const PlayerComp = () => {
   <Player
     inputProps={{transcript}}
     component={MyComp}
-    durationInFrames={900}
+    durationInFrames={1042}
     compositionWidth={1080}
     compositionHeight={1920}
     fps={30}
