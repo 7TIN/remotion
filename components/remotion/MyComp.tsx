@@ -12,7 +12,7 @@ import {
 import { loadFont } from "@remotion/google-fonts/GeistMono";
 
 
-type Segment = {
+export type Segment = {
   id: string;
   startMs: number;
   endMs: number;
