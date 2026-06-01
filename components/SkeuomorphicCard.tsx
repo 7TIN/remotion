@@ -20,7 +20,7 @@ export function SkeuomorphicCard({
   return (
     <div
       className={`
-        rounded-3xl p-6
+        rounded-3xl p-4
         ${
           isDark
             ? 'bg-linear-to-b from-[#202020] to-[#191919] shadow-[0_1px_0.5px_#ffffff1a_inset,0_1px_0.5px_#ffffff25_inset,0_10px_10px_-9px_#00000070,0_20px_20px_-14px_#00000060,0_0px_6px_0px_#00000060]'
