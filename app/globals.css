@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import url('https://fonts.googleapis.com/css2?family=Akshar:wght@300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Mukta:wght@200;300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -47,6 +46,22 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* --font-jakarta: var(--font-jakarta);
+  --font-reenie: var(--font-reenie);
+  --font-roboto: var(--font-roboto);
+  --font-bricolage: var(--font-bricolage);
+  --font-anton: var(--font-anton);
+  --font-playfair: var(--font-playfair);
+  --font-poetsen: var(--font-poetsen);
+  --font-lora: var(--font-lora);
+  --font-russo: var(--font-russo);
+  --font-jersey: var(--font-jersey);
+  --font-surfer: var(--font-surfer);
+  --font-inter: var(--font-inter);
+  --font-poppins: var(--font-poppins);
+  --font-literata: var(--font-literata);
+  --font-manrope: var(--font-manrope); */
 }
 
 :root {
@@ -129,3 +144,64 @@
     @apply font-sans;
   }
 }
+
+
+@utility font-jakarta {
+  font-family: var(--font-jakarta);
+}
+
+@utility font-reenie {
+  font-family: var(--font-reenie);
+}
+
+@utility font-roboto {
+  font-family: var(--font-roboto);
+}
+
+@utility font-bricolage {
+  font-family: var(--font-bricolage);
+}
+
+@utility font-anton {
+  font-family: var(--font-anton);
+}
+/* 
+@utility font-playfair {
+  font-family: var(--font-playfair);
+}
+
+@utility font-poetsen {
+  font-family: var(--font-poetsen);
+}
+
+@utility font-lora {
+  font-family: var(--font-lora);
+}
+
+@utility font-russo {
+  font-family: var(--font-russo);
+}
+
+@utility font-jersey {
+  font-family: var(--font-jersey);
+}
+
+@utility font-surfer {
+  font-family: var(--font-surfer);
+}
+
+@utility font-inter {
+  font-family: var(--font-inter);
+}
+
+@utility font-poppins {
+  font-family: var(--font-poppins);
+}
+
+@utility font-literata {
+  font-family: var(--font-literata);
+}
+
+@utility font-manrope {
+  font-family: var(--font-manrope);
+} */

@@ -2,7 +2,7 @@ import React from 'react';
 import {Composition} from 'remotion';
 // import {MyComposition} from './Composition';
 import {MyComp} from './MyComp';
-import {transcript} from '@/data/transcript';
+import {transcript} from '../../data/transcript';
 
 
 // export const RemotionRoot: React.FC = () => {
