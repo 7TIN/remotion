@@ -1,3 +1,4 @@
+import { Video } from "@remotion/media";
 import { useMemo } from "react";
 import {
   AbsoluteFill,
@@ -6,6 +7,10 @@ import {
   useVideoConfig,
   staticFile,
 } from "remotion";
+
+
+import { loadFont } from "@remotion/google-fonts/GeistMono";
+
 
 type Segment = {
   id: string;
@@ -24,6 +29,10 @@ type CaptionChunk = {
 type MyCompProps = {
   transcript: Segment[];
 };
+
+const { fontFamily } = loadFont("normal", {
+  subsets : ["latin"]
+});
 
 const MAX_WORDS_PER_CAPTION = 8;
 const MIN_WORDS_PER_CAPTION = 3;
@@ -160,7 +169,7 @@ export const MyComp: React.FC<MyCompProps> = ({ transcript }) => {
 
   return (
     <AbsoluteFill>
-      <OffthreadVideo src={staticFile("video1.mp4")} />
+      <Video src={staticFile("video1.mp4")} />
 
       <AbsoluteFill
         style={{
@@ -171,6 +180,7 @@ export const MyComp: React.FC<MyCompProps> = ({ transcript }) => {
         <div
           style={{
             color: "white",
+            fontFamily,
             fontSize: 60,
             fontWeight: "bold",
             textAlign: "center",

@@ -11,6 +11,8 @@
   "dependencies": {
     "@base-ui/react": "^1.5.0",
     "@remotion/cli": "^4.0.469",
+    "@remotion/google-fonts": "4.0.469",
+    "@remotion/media": "4.0.469",
     "@remotion/player": "^4.0.469",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
