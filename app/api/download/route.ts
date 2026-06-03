@@ -2,16 +2,35 @@ import fs from "fs";
 import path from "path";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const file = searchParams.get("file"); // e.g. "MyComp-123456.mp4"
+  const {searchParams} = new URL(req.url);
 
-  const filePath = path.join(process.cwd(), "out", path.basename(file!));
+  const file = searchParams.get("file");
+
+  if (!file) {
+    return new Response("Missing file", {
+      status: 400,
+    });
+  }
+
+  const filePath = path.join(
+    process.cwd(),
+    "out",
+    file,
+  );
+
+  if (!fs.existsSync(filePath)) {
+    return new Response("Not found", {
+      status: 404,
+    });
+  }
+
   const buffer = fs.readFileSync(filePath);
 
   return new Response(buffer, {
     headers: {
       "Content-Type": "video/mp4",
-      "Content-Disposition": `attachment; filename="${path.basename(filePath)}"`,
+      "Content-Disposition":
+        `attachment; filename="${file}"`,
     },
   });
 }

@@ -1,13 +1,27 @@
 import { Segment } from "@/components/remotion/MyComp";
 
-// lib/render.ts — reusable client function
-export const renderVideo = async (transcript: Segment[]) => {
+export const startRender = async (
+  transcript: Segment[],
+) => {
   const res = await fetch("/api/render", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transcript }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      transcript,
+    }),
   });
 
-  if (!res.ok) throw new Error("Render failed");
-  return res.json(); // { path: "out/MyComp-123456.mp4" }
+  return res.json();
+};
+
+export const checkRenderStatus = async (
+  jobId: string,
+) => {
+  const res = await fetch(
+    `/api/render/status?jobId=${jobId}`,
+  );
+
+  return res.json();
 };
