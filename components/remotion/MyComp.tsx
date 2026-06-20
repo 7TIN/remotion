@@ -170,7 +170,6 @@ export const MyComp: React.FC<MyCompProps> = ({ transcript }) => {
   return (
     <AbsoluteFill>
       <Video src={staticFile("video1.mp4")} />
-
       <AbsoluteFill
         style={{
           justifyContent: "center",

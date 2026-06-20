@@ -11,6 +11,13 @@ export default function Home() {
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black font-mono gap-y-4">
       {/* <ModeToggle /> */}
       {/* HELLO */}
+      {/* <video src="/foreground_rgba.webm"></video> */}
+
+      <div className="flex bg-white max-w-80 h-50 text-center justify-center items-center w-full">
+      <p className="text-shadow-gray-50 text-black text-5xl">SUPERRRRR</p>
+
+      </div>
+
       <div className="relative cursor-pointer overflow-hidden rounded-panel flex items-center justify-center text-white bg-neutral-600 px-3 py-px rounded-sm">
         Hello
         {/* <span className="text-neutral-400 pl-1">User !</span> */}
