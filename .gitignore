@@ -40,7 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-public/video1.mp4
+public/*.mp4
 public/clip.mp4
 public/foreground_*
 public/back.jpg
+public/test.webm
+
+vid.txt

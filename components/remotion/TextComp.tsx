@@ -38,10 +38,10 @@ export const TextComp: React.FC = () => {
           INTELLIGENCE 
         </div>
       </AbsoluteFill>
-
       {/* Layer 3: Foreground person (transparent webm) */}
       <AbsoluteFill style={{ zIndex: 3 }}>
-        <OffthreadVideo src={staticFile("foreground_rgba.webm")} transparent />
+        {/* <OffthreadVideo src={staticFile("foreground_rgba.webm")} transparent /> */}
+        <OffthreadVideo src={staticFile("test.webm")} transparent />
       </AbsoluteFill>
     </AbsoluteFill>
   );
