@@ -41,6 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 public/*.mp4
+public/*.webm
 public/clip.mp4
 public/foreground_*
 public/back.jpg

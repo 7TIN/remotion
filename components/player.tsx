@@ -1,9 +1,9 @@
 // "use server"
 "use client";
 import { Player } from "@remotion/player";
-import { MyComp } from "./remotion/MyComp";
-import { transcript } from "@/data/transcript";
-import { videos, VideosInSequence } from "./remotion/VidSeries";
+// import { MyComp } from "./remotion/MyComp";
+// import { transcript } from "@/data/transcript";
+import { backVideo, videos, VideosInSequence } from "./remotion/VidSeries";
 import { useMemo } from "react";
 // import { TextComp } from "./remotion/TextComp";
 
@@ -11,6 +11,7 @@ export const PlayerComp = () => {
   const inputProps = useMemo(() => {
     return {
       videos: videos,
+      backVideo : backVideo
     };
   }, []);
   const totalFrames = 834;
@@ -32,9 +33,8 @@ export const PlayerComp = () => {
       aspectRatio: "9 / 16",
     }}
   /> */}
-
       <Player
-        inputProps={{ videos }}
+        inputProps={{ videos, backVideo }}
         component={VideosInSequence}
         durationInFrames={totalFrames}
         fps={24000 / 1001} // <-- exact original fps
