@@ -9,13 +9,15 @@ import {
 // // import {CalculateMetadataFunction} from 'remotion';
 // import { getMediaMetadata } from "./get-media-metadata";
 import { loadFont } from "@remotion/google-fonts/GeistMono";
+import React from "react";
+import { linearTiming, TransitionSeries } from "@remotion/transitions";
+import { fade } from "@remotion/transitions/fade";
 
 const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
 });
 
 type video = { id: number; src: string; durationInFrames: number };
-
 
 export const backVideo: video[] = [
   {
@@ -72,57 +74,116 @@ export const VideosInSequence: React.FC<{
   const { fps } = useVideoConfig();
 
   return (
-    <Series>
-      {videos.map((vid) => (
-        <Series.Sequence
-          key={vid.src}
-          durationInFrames={vid.durationInFrames}
-          premountFor={Math.round(1.5 * fps)}
-        >
-          {vid.src.includes("clip") ? (
-            <AbsoluteFill>
-              <AbsoluteFill style={{ zIndex: 1 }}>
-                <OffthreadVideo src={staticFile(vid.src)} pauseWhenBuffering />
-              </AbsoluteFill>
-              <AbsoluteFill
-                style={{
-                  zIndex: 2,
-                  justifyContent: "flex-start",
-                  alignItems: "center",
-                }}
-              >
-                <div
+    // <Series>
+    //   {videos.map((vid) => (
+    //     <Series.Sequence
+    //       key={vid.src}
+    //       durationInFrames={vid.durationInFrames}
+    //       premountFor={Math.round(2 * fps)}
+    //     >
+    //       {vid.src.includes("clip") ? (
+    //         <AbsoluteFill>
+    //           <AbsoluteFill style={{ zIndex: 1 }}>
+    //             <OffthreadVideo src={staticFile(vid.src)} pauseWhenBuffering />
+    //           </AbsoluteFill>
+    //           <AbsoluteFill
+    //             style={{
+    //               zIndex: 2,
+    //               justifyContent: "flex-start",
+    //               alignItems: "center",
+    //             }}
+    //           >
+    //             <div
+    //               style={{
+    //                 fontFamily,
+    //                 fontSize: 140,
+    //                 color: "white",
+    //                 fontWeight: "bold",
+    //                 textAlign: "center",
+    //                 paddingTop: 200,
+    //               }}
+    //             >
+    //               INTELLIGENCE
+    //             </div>
+    //           </AbsoluteFill>
+    //           <AbsoluteFill style={{ zIndex: 3 }} >
+    //             <OffthreadVideo
+    //               pauseWhenBuffering
+    //               src={staticFile(
+    //                 backVideo.find((bvid) => bvid.id === vid.id)?.src || "",
+    //               )}
+    //               transparent
+    //             />
+    //           </AbsoluteFill>
+    //         </AbsoluteFill>
+    //       ) : (
+    //         <OffthreadVideo src={staticFile(vid.src)} pauseWhenBuffering />
+    //       )}
+    //     </Series.Sequence>
+    //   ))}
+    // </Series>
+    <TransitionSeries>
+      {videos.map((vid, i) => (
+        <React.Fragment key={vid.src}>
+          <TransitionSeries.Sequence
+            durationInFrames={vid.durationInFrames}
+            premountFor={Math.round(2 * fps)}
+          >
+            {/* your existing video content */}
+            {vid.src.includes("clip") ? (
+              <AbsoluteFill>
+                <AbsoluteFill style={{ zIndex: 1 }}>
+                  <OffthreadVideo
+                    src={staticFile(vid.src)}
+                    pauseWhenBuffering
+                  />
+                </AbsoluteFill>
+                <AbsoluteFill
                   style={{
-                    fontFamily,
-                    fontSize: 140,
-                    color: "white",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    paddingTop: 200,
+                    zIndex: 2,
+                    justifyContent: "flex-start",
+                    alignItems: "center",
                   }}
                 >
-                  INTELLIGENCE
-                </div>
+                  <div
+                    style={{
+                      fontFamily,
+                      fontSize: 140,
+                      color: "white",
+                      fontWeight: "bold",
+                      textAlign: "center",
+                      paddingTop: 200,
+                    }}
+                  >
+                    INTELLIGENCE
+                  </div>
+                </AbsoluteFill>
+                <AbsoluteFill style={{ zIndex: 3 }}>
+                  <OffthreadVideo
+                    pauseWhenBuffering
+                    src={staticFile(
+                      backVideo.find((bvid) => bvid.id === vid.id)?.src || "",
+                    )}
+                    transparent
+                  />
+                </AbsoluteFill>
               </AbsoluteFill>
-              <AbsoluteFill style={{ zIndex: 3 }}>
-                <OffthreadVideo
-                  pauseWhenBuffering
-                  src={staticFile(
-                    backVideo.find((bvid) => bvid.id === vid.id)?.src || "",
-                  )}
-                  transparent
-                />
-              </AbsoluteFill>
-            </AbsoluteFill>
-          ) : (
-            <OffthreadVideo src={staticFile(vid.src)} pauseWhenBuffering />
+            ) : (
+              <OffthreadVideo src={staticFile(vid.src)} pauseWhenBuffering />
+            )}
+          </TransitionSeries.Sequence>
+          {/* Add transition between sequences (not after the last one) */}
+          {i < videos.length - 1 && (
+            <TransitionSeries.Transition
+              timing={linearTiming({ durationInFrames: 2 })}
+              presentation={fade()}
+            />
           )}
-        </Series.Sequence>
+        </React.Fragment>
       ))}
-    </Series>
+    </TransitionSeries>
   );
 };
-
 
 // export const videosSrc = [
 //   {

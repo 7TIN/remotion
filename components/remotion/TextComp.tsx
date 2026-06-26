@@ -28,14 +28,14 @@ export const TextComp: React.FC = () => {
           style={{
             fontFamily,
             fontSize: 140,
-            color:"yellow",
+            color: "white",
             fontWeight: "bold",
             textAlign: "center",
             paddingTop: 200,
             // textShadow: "0 0 40px rgba(0,0,0,0.9)",
           }}
         >
-          INTELLIGENCE 
+          INTELLIGENCE
         </div>
       </AbsoluteFill>
       {/* Layer 3: Foreground person (transparent webm) */}
