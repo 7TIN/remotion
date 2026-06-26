@@ -1,13 +1,18 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import {
-  AbsoluteFill,
-  OffthreadVideo,
+  prefetch,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
-  staticFile,
-  Series,
+  AbsoluteFill,
+  OffthreadVideo,
 } from "remotion";
+import {
+  TransitionSeries,
+  linearTiming,
+} from "@remotion/transitions";
 import { loadFont } from "@remotion/google-fonts/GeistMono";
+import { fade } from "@remotion/transitions/fade";
 
 export type Segment = {
   id: string;
@@ -23,11 +28,15 @@ type CaptionChunk = {
   text: string;
 };
 
-type MyCompProps = {
-  transcript: Segment[];
-  videos: { id: number; src: string; durationInFrames: number }[];
-  backVideo: { id: number; src: string; durationInFrames: number }[];
+type VideoDef = {
+  id: number;
+  src: string;
+  durationInFrames: number;
 };
+
+// ───────────────────────────────────────────────
+// MODULE-LEVEL DATA (computed once on import)
+// ───────────────────────────────────────────────
 
 const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
@@ -42,21 +51,77 @@ const CAPTION_DURATION_SCALE = 0.6;
 const CAPTION_GAP_MS = 50;
 
 const NEXT_PHRASE_BREAK_WORDS = new Set([
-  "and",
-  "but",
-  "because",
-  "so",
-  "that",
-  "which",
-  "while",
-  "when",
-  "where",
-  "who",
-  "with",
+  "and", "but", "because", "so", "that", "which",
+  "while", "when", "where", "who", "with",
 ]);
-
 const END_PHRASE_BREAK_WORDS = new Set(["like"]);
 
+const videos: VideoDef[] = [
+  { id: 1, src: "clip_00-03.mp4", durationInFrames: 72 },
+  { id: 2, src: "rest_03-10.mp4", durationInFrames: 168 },
+  { id: 3, src: "clip_10-13.mp4", durationInFrames: 72 },
+  { id: 4, src: "rest_13-18.mp4", durationInFrames: 120 },
+  { id: 5, src: "clip_18-21.mp4", durationInFrames: 72 },
+  { id: 6, src: "rest_21-26.mp4", durationInFrames: 120 },
+  { id: 7, src: "clip_26-29.mp4", durationInFrames: 72 },
+  { id: 8, src: "rest_29-end.mp4", durationInFrames: 138 },
+];
+
+const backVideo: VideoDef[] = [
+  { id: 1, src: "b016d130-df46-4fea-a00e-66199ba94e67_output.webm", durationInFrames: 72 },
+  { id: 3, src: "887ff269-255a-422d-b0e8-d5d9d3c673f9_output.webm", durationInFrames: 72 },
+  { id: 5, src: "c5a88e61-5aab-4a12-9b4a-ad697dff2eaa_output.webm", durationInFrames: 72 },
+  { id: 7, src: "4201bfc4-2e10-4366-8747-24272d7c8470_output.webm", durationInFrames: 72 },
+];
+
+// ─── PRECOMPUTED VIDEO MAP (zero lookups at render time) ───
+const resolvedVideos = videos.map((vid) => ({
+  ...vid,
+  resolvedSrc: staticFile(vid.src),
+  backSrc: vid.src.includes("clip")
+    ? staticFile(backVideo.find((b) => b.id === vid.id)?.src ?? "")
+    : null,
+}));
+
+// All video URLs for prefetch
+export const ALL_VIDEO_SRCS = resolvedVideos.flatMap((v) =>
+  v.backSrc ? [v.resolvedSrc, v.backSrc] : [v.resolvedSrc]
+);
+
+// ─── PRECOMPUTED STYLES (no object re-creation per frame) ───
+const Z1_STYLE: React.CSSProperties = { zIndex: 1 };
+const Z3_STYLE: React.CSSProperties = { zIndex: 3 };
+const TEXT_LAYER_STYLE: React.CSSProperties = {
+  zIndex: 2,
+  justifyContent: "flex-start",
+  alignItems: "center",
+};
+const INTELLIGENCE_STYLE: React.CSSProperties = {
+  fontFamily,
+  fontSize: 140,
+  color: "white",
+  fontWeight: "bold",
+  textAlign: "center",
+  paddingTop: 200,
+};
+const CAPTION_BOX_STYLE: React.CSSProperties = {
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 10,
+  pointerEvents: "none",
+};
+const CAPTION_TEXT_STYLE: React.CSSProperties = {
+  color: "white",
+  fontFamily,
+  fontSize: 60,
+  fontWeight: "bold",
+  textAlign: "center",
+  maxWidth: "80%",
+  willChange: "transform",
+  textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+};
+
+// ─── CAPTION UTILITIES ───
 const normalizeWord = (word: string) =>
   word.toLowerCase().replace(/^[^a-z0-9']+|[^a-z0-9']+$/gi, "");
 
@@ -102,7 +167,7 @@ const splitTextIntoCaptions = (text: string): string[] => {
 
 const splitSegmentIntoCaptionChunks = (segment: Segment): CaptionChunk[] => {
   const captions = splitTextIntoCaptions(segment.text);
-  const totalWords = captions.reduce((total, c) => total + countWords(c), 0);
+  const totalWords = captions.reduce((t, c) => t + countWords(c), 0);
   const durationMs = segment.endMs - segment.startMs;
   let elapsedWords = 0;
 
@@ -123,16 +188,16 @@ const splitSegmentIntoCaptionChunks = (segment: Segment): CaptionChunk[] => {
     const readableDurationMs = clamp(
       captionWords * MS_PER_WORD,
       MIN_CAPTION_DURATION_MS,
-      MAX_CAPTION_DURATION_MS,
+      MAX_CAPTION_DURATION_MS
     );
     const visibleDurationMs = Math.min(
       estimatedDurationMs * CAPTION_DURATION_SCALE,
-      readableDurationMs,
+      readableDurationMs
     );
     const gapMs = index === captions.length - 1 ? 0 : CAPTION_GAP_MS;
     const endMs = Math.min(
       startMs + visibleDurationMs,
-      Math.max(startMs, estimatedEndMs - gapMs),
+      Math.max(startMs, estimatedEndMs - gapMs)
     );
 
     return {
@@ -144,12 +209,9 @@ const splitSegmentIntoCaptionChunks = (segment: Segment): CaptionChunk[] => {
   });
 };
 
-// ───────────────────────────────────────────────
-// PRE-BUILD CAPTION MAP (O(1) lookup at runtime)
-// ───────────────────────────────────────────────
 const buildCaptionMap = (
   chunks: CaptionChunk[],
-  fps: number,
+  fps: number
 ): Map<number, string> => {
   const map = new Map<number, string>();
   chunks.forEach((chunk) => {
@@ -162,122 +224,82 @@ const buildCaptionMap = (
   return map;
 };
 
-// ───────────────────────────────────────────────
-// SEPARATE CAPTION COMPONENT (isolated re-renders)
-// ───────────────────────────────────────────────
-const CaptionOverlay: React.FC<{
+// ─── ISOLATED CAPTION COMPONENT ───
+const CaptionOverlay = React.memo<{
   captionMap: Map<number, string>;
   frame: number;
-}> = React.memo(({ captionMap, frame }) => {
+}>(({ captionMap, frame }) => {
   const text = captionMap.get(frame);
   if (!text) return null;
-
   return (
-    <AbsoluteFill
-      style={{
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 10,
-        pointerEvents: "none",
-      }}
-    >
-      <div
-        style={{
-          color: "white",
-          fontFamily,
-          fontSize: 60,
-          fontWeight: "bold",
-          textAlign: "center",
-          maxWidth: "80%",
-          willChange: "transform",
-          textShadow: "0 2px 8px rgba(0,0,0,0.6)",
-        }}
-      >
-        {text}
-      </div>
+    <AbsoluteFill style={CAPTION_BOX_STYLE}>
+      <div style={CAPTION_TEXT_STYLE}>{text}</div>
     </AbsoluteFill>
   );
 });
 CaptionOverlay.displayName = "CaptionOverlay";
 
-// ───────────────────────────────────────────────
-// MAIN COMPOSITION COMPONENT
-// ───────────────────────────────────────────────
-export const MyComp: React.FC<MyCompProps> = ({
-  transcript,
-  videos,
-  backVideo,
-}) => {
+// ─── PREFETCH HOOK (Player only) ───
+// ─── MAIN COMPOSITION ───
+export const MyComp: React.FC<{ transcript: Segment[] }> = ({ transcript }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Precompute caption chunks once (transcript is const)
   const captionChunks = useMemo(
     () => transcript.flatMap(splitSegmentIntoCaptionChunks),
-    [transcript],
+    [transcript]
   );
-
-  // Build O(1) frame lookup map once
   const captionMap = useMemo(
     () => buildCaptionMap(captionChunks, fps),
-    [captionChunks, fps],
+    [captionChunks, fps]
   );
 
   return (
     <AbsoluteFill>
-      <Series>
-        {videos.map((vid) => (
-          <Series.Sequence
-            key={vid.src}
-            durationInFrames={vid.durationInFrames}
-            premountFor={Math.round(1.5 * fps)}
-          >
-            {vid.src.includes("clip") ? (
-              <AbsoluteFill>
-                <AbsoluteFill style={{ zIndex: 1 }}>
-                  <OffthreadVideo
-                    src={staticFile(vid.src)}
-                    pauseWhenBuffering
-                  />
+      <TransitionSeries>
+        {resolvedVideos.map((vid, i) => (
+          <React.Fragment key={vid.id}>
+            <TransitionSeries.Sequence
+              durationInFrames={vid.durationInFrames}
+              premountFor={Math.round(3 * fps)} // 3 sec decoder warmup
+            >
+              {vid.backSrc ? (
+                <AbsoluteFill>
+                  <AbsoluteFill style={Z1_STYLE}>
+                    <OffthreadVideo
+                      src={vid.resolvedSrc}
+                      pauseWhenBuffering
+                    />
+                  </AbsoluteFill>
+                  <AbsoluteFill style={TEXT_LAYER_STYLE}>
+                    <div style={INTELLIGENCE_STYLE}>INTELLIGENCE</div>
+                  </AbsoluteFill>
+                  <AbsoluteFill style={Z3_STYLE}>
+                    <OffthreadVideo
+                      src={vid.backSrc}
+                      transparent
+                      pauseWhenBuffering
+                    />
+                  </AbsoluteFill>
                 </AbsoluteFill>
-                <AbsoluteFill
-                  style={{
-                    zIndex: 2,
-                    justifyContent: "flex-start",
-                    alignItems: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily,
-                      fontSize: 140,
-                      color: "white",
-                      fontWeight: "bold",
-                      textAlign: "center",
-                      paddingTop: 200,
-                    }}
-                  >
-                    INTELLIGENCE
-                  </div>
-                </AbsoluteFill>
-                <AbsoluteFill style={{ zIndex: 3 }}>
-                  <OffthreadVideo
-                    pauseWhenBuffering
-                    src={staticFile(
-                      backVideo.find((bvid) => bvid.id === vid.id)?.src || "",
-                    )}
-                    transparent
-                  />
-                </AbsoluteFill>
-              </AbsoluteFill>
-            ) : (
-              <OffthreadVideo src={staticFile(vid.src)} pauseWhenBuffering />
-            )}
-          </Series.Sequence>
-        ))}
-      </Series>
+              ) : (
+                <OffthreadVideo
+                  src={vid.resolvedSrc}
+                  pauseWhenBuffering
+                />
+              )}
+            </TransitionSeries.Sequence>
 
-      {/* Isolated caption layer — only this re-renders on frame change */}
+            {i < resolvedVideos.length - 1 && (
+              <TransitionSeries.Transition
+                timing={linearTiming({ durationInFrames: 5 })}
+                presentation={fade()}
+              />
+            )}
+          </React.Fragment>
+        ))}
+      </TransitionSeries>
+
       <CaptionOverlay captionMap={captionMap} frame={frame} />
     </AbsoluteFill>
   );
