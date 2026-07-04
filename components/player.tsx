@@ -6,6 +6,7 @@ import { transcript } from "@/data/transcript";
 import { backVideo, videos, VideosInSequence } from "./remotion/VidSeries";
 import { useEffect, useMemo, useState } from "react";
 import { prefetch, staticFile } from "remotion";
+import { CaptionComp } from "./remotion/CaptionComp";
 // import { TextComp } from "./remotion/TextComp";
 
 
@@ -85,9 +86,23 @@ export const PlayerComp = () => {
         style={{ width: "100%", aspectRatio: "9 / 16" }}
       /> */}
 
-      <Player
+      {/* <Player
     inputProps={{transcript, videos, backVideo}}
     component={MyComp}
+    durationInFrames={totalFrames}
+    compositionWidth={1080}
+    compositionHeight={1920}
+    fps={24}
+    controls
+    style={{
+      width: "100%",
+      aspectRatio: "9 / 16",
+    }}
+  /> */}
+
+        <Player
+    inputProps={{transcript}}
+    component={CaptionComp}
     durationInFrames={totalFrames}
     compositionWidth={1080}
     compositionHeight={1920}

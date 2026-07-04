@@ -1,5 +1,5 @@
 import { Video } from "@remotion/media";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   OffthreadVideo,
@@ -56,6 +56,23 @@ const NEXT_PHRASE_BREAK_WORDS = new Set([
   "with",
 ]);
 
+const CAPTION_BOX_STYLE: React.CSSProperties = {
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 10,
+  pointerEvents: "none",
+};
+const CAPTION_TEXT_STYLE: React.CSSProperties = {
+  color: "white",
+  fontFamily,
+  fontSize: 60,
+  fontWeight: "bold",
+  textAlign: "center",
+  maxWidth: "80%",
+  willChange: "transform",
+  textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+};
+
 const END_PHRASE_BREAK_WORDS = new Set(["like"]);
 
 const normalizeWord = (word: string) =>
@@ -69,17 +86,13 @@ const countWords = (text: string) =>
 
 const splitTextIntoCaptions = (text: string): string[] => {
   const words = text.trim().split(/\s+/).filter(Boolean);
-
-  if (words.length <= MAX_WORDS_PER_CAPTION) {
-    return [text.trim()];
-  }
+  if (words.length <= MAX_WORDS_PER_CAPTION) return [text.trim()];
 
   const captions: string[] = [];
   let currentWords: string[] = [];
 
   words.forEach((word, index) => {
     currentWords.push(word);
-
     const isLastWord = index === words.length - 1;
     const currentWord = normalizeWord(word);
     const nextWord = words[index + 1] ? normalizeWord(words[index + 1]) : "";
@@ -107,10 +120,7 @@ const splitTextIntoCaptions = (text: string): string[] => {
 
 const splitSegmentIntoCaptionChunks = (segment: Segment): CaptionChunk[] => {
   const captions = splitTextIntoCaptions(segment.text);
-  const totalWords = captions.reduce(
-    (total, caption) => total + countWords(caption),
-    0
-  );
+  const totalWords = captions.reduce((t, c) => t + countWords(c), 0);
   const durationMs = segment.endMs - segment.startMs;
   let elapsedWords = 0;
 
@@ -152,26 +162,62 @@ const splitSegmentIntoCaptionChunks = (segment: Segment): CaptionChunk[] => {
   });
 };
 
+const buildCaptionMap = (
+  chunks: CaptionChunk[],
+  fps: number
+): Map<number, string> => {
+  const map = new Map<number, string>();
+  chunks.forEach((chunk) => {
+    const startFrame = Math.floor((chunk.startMs / 1000) * fps);
+    const endFrame = Math.ceil((chunk.endMs / 1000) * fps);
+    for (let f = startFrame; f < endFrame; f++) {
+      map.set(f, chunk.text);
+    }
+  });
+  return map;
+};
+
+// ─── ISOLATED CAPTION COMPONENT ───
+const CaptionOverlay = React.memo<{
+  captionMap: Map<number, string>;
+  frame: number;
+}>(({ captionMap, frame }) => {
+  const text = captionMap.get(frame);
+  if (!text) return null;
+  return (
+    <AbsoluteFill style={CAPTION_BOX_STYLE}>
+      <div style={CAPTION_TEXT_STYLE}>{text}</div>
+    </AbsoluteFill>
+  );
+});
+CaptionOverlay.displayName = "CaptionOverlay";
+
+
 export const CaptionComp: React.FC<CaptionCompProps> = ({ transcript }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const currentMs = (frame / fps) * 1000;
+//   const currentMs = (frame / fps) * 1000;
 
   const captionChunks = useMemo(
     () => transcript.flatMap(splitSegmentIntoCaptionChunks),
     [transcript]
   );
 
-  const activeCaption = captionChunks.find(
-    (caption) => currentMs >= caption.startMs && currentMs < caption.endMs
-  );
+    const captionMap = useMemo(
+      () => buildCaptionMap(captionChunks, fps),
+      [captionChunks, fps]
+    );
+
+//   const activeCaption = captionChunks.find(
+//     (caption) => currentMs >= caption.startMs && currentMs < caption.endMs
+//   );
+
 
   return (
     <AbsoluteFill>
       <Video src={staticFile("video1.mp4")} />
-
-      <AbsoluteFill
+      {/* <AbsoluteFill
         style={{
           justifyContent: "center",
           alignItems: "center",
@@ -190,7 +236,8 @@ export const CaptionComp: React.FC<CaptionCompProps> = ({ transcript }) => {
         >
           {activeCaption?.text}
         </div>
-      </AbsoluteFill>
+      </AbsoluteFill> */}
+      <CaptionOverlay captionMap={captionMap} frame={frame} />
     </AbsoluteFill>
   );
 };

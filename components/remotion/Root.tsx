@@ -11,6 +11,7 @@ import {
   // videosSrc,
 } from "./VidSeries";
 import { MyComp } from "./MyComp";
+import { CaptionComp } from "./CaptionComp";
 
 export const MyVideo = () => {
   return (
@@ -30,9 +31,21 @@ export const MyVideo = () => {
       }}
     /> */}
 
-        <Composition
+        {/* <Composition
       id="myComp"
       component={MyComp}
+      durationInFrames={834}
+      fps={24000 / 1001}  // match your player: ~23.976
+      width={1080}        // match your player (you had 1920x1080 but player uses 1080x1920)
+      height={1920}
+      defaultProps={{ 
+         transcript
+      }}
+    /> */}
+
+            <Composition
+      id="caption"
+      component={CaptionComp}
       durationInFrames={834}
       fps={24000 / 1001}  // match your player: ~23.976
       width={1080}        // match your player (you had 1920x1080 but player uses 1080x1920)
