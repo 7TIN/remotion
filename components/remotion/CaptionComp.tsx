@@ -1,17 +1,34 @@
-import { Video } from "@remotion/media";
 import React, { useMemo } from "react";
+import { Video } from "@remotion/media";
 import {
   AbsoluteFill,
-  OffthreadVideo,
   useCurrentFrame,
   useVideoConfig,
+  spring,
+  interpolate,
   staticFile,
 } from "remotion";
 
+import { loadFont as loadGeistMono } from "@remotion/google-fonts/GeistMono";
+import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
+import { loadFont as loadOswald } from "@remotion/google-fonts/Oswald";
+import { loadFont as loadMerriweather } from "@remotion/google-fonts/Merriweather";
+import { loadFont as loadDancingScript } from "@remotion/google-fonts/DancingScript";
 
-import { loadFont } from "@remotion/google-fonts/GeistMono";
+// const dancingScript = Dancing_Script({ subsets: ["latin"] });
+/* ─────────────────────────────────────────
+   1. FONT LOADING (module level)
+   ───────────────────────────────────────── */
+  //  Dancing_Script
+const { fontFamily: fontMono } = loadGeistMono("normal", { subsets: ["latin"] });
+const { fontFamily: fontInter } = loadInter("normal", { subsets: ["latin"] });
+const { fontFamily: fontOswald } = loadOswald("normal", { subsets: ["latin"] });
+const { fontFamily: fontScript } = loadDancingScript("normal", { subsets: ["latin"] });
+const { fontFamily: fontFormal } = loadMerriweather("normal", { subsets: ["latin"] });
 
-
+/* ─────────────────────────────────────────
+   2. TYPES
+   ───────────────────────────────────────── */
 export type Segment = {
   id: string;
   startMs: number;
@@ -19,225 +36,475 @@ export type Segment = {
   text: string;
 };
 
-type CaptionChunk = {
-  id: string;
-  startMs: number;
-  endMs: number;
+type WordStyle = {
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string | number;
+  fontStyle?: string;
+  color?: string;
+  letterSpacing?: string;
+  textTransform?: string;
+  textShadow?: string;
+};
+
+type WordNode = {
+  type: "word";
   text: string;
+  style?: WordStyle;
+};
+
+type GroupNode = {
+  type: "group";
+  direction: "horizontal" | "vertical";
+  children: KineticNode[];
+  gap?: number;
+  alignItems?: "center" | "flex-start" | "flex-end";
+};
+
+type KineticNode = WordNode | GroupNode;
+
+type KineticScene = {
+  id: string;
+  layout: GroupNode;              // root is always a group
+  position: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  startFrame: number;
+  endFrame: number;
+  wordStaggerFrames?: number;      // frames between each word appearance
 };
 
 type CaptionCompProps = {
   transcript: Segment[];
 };
 
-const { fontFamily } = loadFont("normal", {
-  subsets : ["latin"]
-});
-
-const MAX_WORDS_PER_CAPTION = 8;
-const MIN_WORDS_PER_CAPTION = 3;
-const MS_PER_WORD = 260;
-const MIN_CAPTION_DURATION_MS = 650;
-const MAX_CAPTION_DURATION_MS = 1700;
-const CAPTION_DURATION_SCALE = 0.60;
-const CAPTION_GAP_MS = 50;
-
-const NEXT_PHRASE_BREAK_WORDS = new Set([
-  "and",
-  "but",
-  "because",
-  "so",
-  "that",
-  "which",
-  "while",
-  "when",
-  "where",
-  "who",
-  "with",
-]);
-
-const CAPTION_BOX_STYLE: React.CSSProperties = {
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 10,
-  pointerEvents: "none",
-};
-const CAPTION_TEXT_STYLE: React.CSSProperties = {
-  color: "white",
-  fontFamily,
-  fontSize: 60,
-  fontWeight: "bold",
-  textAlign: "center",
-  maxWidth: "80%",
-  willChange: "transform",
-  textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+/* ─────────────────────────────────────────
+   3. DEFAULT READABILITY STYLES
+   ───────────────────────────────────────── */
+const DEFAULT_WORD_STYLE: WordStyle = {
+  color: "#ffffff",
+  textShadow: "0 2px 12px rgba(0,0,0,0.7), 0 0 24px rgba(0,0,0,0.4)",
 };
 
-const END_PHRASE_BREAK_WORDS = new Set(["like"]);
-
-const normalizeWord = (word: string) =>
-  word.toLowerCase().replace(/^[^a-z0-9']+|[^a-z0-9']+$/gi, "");
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), max);
-
-const countWords = (text: string) =>
-  text.trim().split(/\s+/).filter(Boolean).length;
-
-const splitTextIntoCaptions = (text: string): string[] => {
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length <= MAX_WORDS_PER_CAPTION) return [text.trim()];
-
-  const captions: string[] = [];
-  let currentWords: string[] = [];
-
-  words.forEach((word, index) => {
-    currentWords.push(word);
-    const isLastWord = index === words.length - 1;
-    const currentWord = normalizeWord(word);
-    const nextWord = words[index + 1] ? normalizeWord(words[index + 1]) : "";
-    const hasEnoughWords = currentWords.length >= MIN_WORDS_PER_CAPTION;
-    const hasSentencePunctuation = /[.!?;:]$/.test(word);
-    const reachedMaxWords = currentWords.length >= MAX_WORDS_PER_CAPTION;
-    const nextStartsPhrase = NEXT_PHRASE_BREAK_WORDS.has(nextWord);
-    const currentEndsPhrase = END_PHRASE_BREAK_WORDS.has(currentWord);
-
-    if (
-      isLastWord ||
-      (hasEnoughWords &&
-        (hasSentencePunctuation ||
-          reachedMaxWords ||
-          currentEndsPhrase ||
-          (currentWords.length >= 4 && nextStartsPhrase)))
-    ) {
-      captions.push(currentWords.join(" "));
-      currentWords = [];
-    }
+/* ─────────────────────────────────────────
+   4. ANIMATED WORD COMPONENT
+   ───────────────────────────────────────── */
+const AnimatedWord = React.memo<{
+  text: string;
+  style?: WordStyle;
+  frame: number;          // relative to this word's scheduled entrance
+  fps: number;
+  entranceFrom: "left" | "top";
+}>(({ text, style, frame, fps, entranceFrom }) => {
+  const progress = spring({
+    frame: Math.max(0, frame),
+    fps,
+    config: { damping: 14, stiffness: 220, mass: 0.55 },
   });
 
-  return captions;
-};
+  const opacity = interpolate(progress, [0, 0.25], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
-const splitSegmentIntoCaptionChunks = (segment: Segment): CaptionChunk[] => {
-  const captions = splitTextIntoCaptions(segment.text);
-  const totalWords = captions.reduce((t, c) => t + countWords(c), 0);
-  const durationMs = segment.endMs - segment.startMs;
-  let elapsedWords = 0;
+  const fromVal = entranceFrom === "left" ? -70 : -45;
+  const translateProp = entranceFrom === "left" ? "translateX" : "translateY";
+  const translate = interpolate(progress, [0, 1], [fromVal, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
-  return captions.map((caption, index) => {
-    const captionWords = countWords(caption);
-    const startMs =
-      index === 0
-        ? segment.startMs
-        : segment.startMs + (durationMs * elapsedWords) / totalWords;
+  const scale = interpolate(progress, [0, 1], [0.88, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
-    elapsedWords += captionWords;
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        opacity,
+        transform: `${translateProp}(${translate}px) scale(${scale})`,
+        whiteSpace: "nowrap",
+        willChange: "transform, opacity",
+        lineHeight: 1.1,
+        ...DEFAULT_WORD_STYLE,
+        ...style,
+      }}
+    >
+      {text}
+    </span>
+  );
+});
+AnimatedWord.displayName = "AnimatedWord";
 
-    const estimatedEndMs =
-      index === captions.length - 1
-        ? segment.endMs
-        : segment.startMs + (durationMs * elapsedWords) / totalWords;
-    const estimatedDurationMs = estimatedEndMs - startMs;
-    const readableDurationMs = clamp(
-      captionWords * MS_PER_WORD,
-      MIN_CAPTION_DURATION_MS,
-      MAX_CAPTION_DURATION_MS
-    );
-    const visibleDurationMs = Math.min(
-      estimatedDurationMs * CAPTION_DURATION_SCALE,
-      readableDurationMs
-    );
-    const gapMs = index === captions.length - 1 ? 0 : CAPTION_GAP_MS;
-    const endMs = Math.min(
-      startMs + visibleDurationMs,
-      Math.max(startMs, estimatedEndMs - gapMs)
-    );
+/* ─────────────────────────────────────────
+   5. RECURSIVE LAYOUT RENDERER
+   ───────────────────────────────────────── */
+type RenderResult = { element: React.ReactNode; nextSequence: number };
+
+const renderKineticNode = (
+  node: KineticNode,
+  frame: number,
+  fps: number,
+  stagger: number,
+  sequenceIndex: number,
+  parentDirection: "horizontal" | "vertical"
+): RenderResult => {
+  if (node.type === "word") {
+    const wordFrame = frame - sequenceIndex * stagger;
+    const entranceFrom = parentDirection === "horizontal" ? "left" : "top";
 
     return {
-      id: `${segment.id}_${index}`,
-      startMs,
-      endMs,
-      text: caption,
+      element: (
+        <AnimatedWord
+          key={`w-${sequenceIndex}-${node.text}`}
+          text={node.text}
+          style={node.style}
+          frame={wordFrame}
+          fps={fps}
+          entranceFrom={entranceFrom}
+        />
+      ),
+      nextSequence: sequenceIndex + 1,
     };
+  }
+
+  const children: React.ReactNode[] = [];
+  let currentSeq = sequenceIndex;
+
+  node.children.forEach((child, i) => {
+    const result = renderKineticNode(
+      child,
+      frame,
+      fps,
+      stagger,
+      currentSeq,
+      node.direction
+    );
+    children.push(
+      <div key={`c-${i}`} style={{ display: "contents" }}>
+        {result.element}
+      </div>
+    );
+    currentSeq = result.nextSequence;
   });
+
+  const element = (
+    <div
+      key={`g-${sequenceIndex}`}
+      style={{
+        display: "flex",
+        flexDirection: node.direction === "horizontal" ? "row" : "column",
+        gap: node.gap ?? (node.direction === "horizontal" ? 14 : 8),
+        alignItems: node.alignItems ?? "center",
+      }}
+    >
+      {children}
+    </div>
+  );
+
+  return { element, nextSequence: currentSeq };
 };
 
-const buildCaptionMap = (
-  chunks: CaptionChunk[],
-  fps: number
-): Map<number, string> => {
-  const map = new Map<number, string>();
-  chunks.forEach((chunk) => {
-    const startFrame = Math.floor((chunk.startMs / 1000) * fps);
-    const endFrame = Math.ceil((chunk.endMs / 1000) * fps);
-    for (let f = startFrame; f < endFrame; f++) {
-      map.set(f, chunk.text);
-    }
-  });
-  return map;
-};
-
-// ─── ISOLATED CAPTION COMPONENT ───
-const CaptionOverlay = React.memo<{
-  captionMap: Map<number, string>;
+/* ─────────────────────────────────────────
+   6. SCENE RENDERER (handles position + fade)
+   ───────────────────────────────────────── */
+const KineticSceneRenderer = React.memo<{
+  scene: KineticScene;
   frame: number;
-}>(({ captionMap, frame }) => {
-  const text = captionMap.get(frame);
-  if (!text) return null;
+  fps: number;
+}>(({ scene, frame, fps }) => {
+  const isVisible = frame >= scene.startFrame && frame < scene.endFrame;
+  if (!isVisible) return null;
+
+  const relativeFrame = frame - scene.startFrame;
+  const duration = scene.endFrame - scene.startFrame;
+
+  // Scene-level fade in / fade out
+  const sceneOpacity = interpolate(
+    relativeFrame,
+    [0, 4, duration - 6, duration],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  const positionMap: Record<string, React.CSSProperties> = {
+    center: { justifyContent: "center", alignItems: "center" },
+    "top-left": { justifyContent: "flex-start", alignItems: "flex-start" },
+    "top-right": { justifyContent: "flex-start", alignItems: "flex-end" },
+    "bottom-left": { justifyContent: "flex-end", alignItems: "flex-start" },
+    "bottom-right": { justifyContent: "flex-end", alignItems: "flex-end" },
+  };
+
+  const { element } = renderKineticNode(
+    scene.layout,
+    relativeFrame,
+    fps,
+    scene.wordStaggerFrames ?? 2,
+    0,
+    scene.layout.direction
+  );
+
   return (
-    <AbsoluteFill style={CAPTION_BOX_STYLE}>
-      <div style={CAPTION_TEXT_STYLE}>{text}</div>
+    <AbsoluteFill
+      style={{
+        display: "flex",
+        padding: 60,
+        pointerEvents: "none",
+        opacity: sceneOpacity,
+        ...positionMap[scene.position],
+      }}
+    >
+      {element}
     </AbsoluteFill>
   );
 });
-CaptionOverlay.displayName = "CaptionOverlay";
+KineticSceneRenderer.displayName = "KineticSceneRenderer";
 
+/* ─────────────────────────────────────────
+   7. EXAMPLE: your exact 2-second phrase
+   ─────────────────────────────────────────
+   Phrase: "I was scrolling on X and I came across"
+   Assumed 30 fps → 2 sec = 60 frames
+   ───────────────────────────────────────── */
+const EXAMPLE_SCENES: KineticScene[] = [
+  /* ── Section 1 ──
+     "I was scrolling"  →  horizontal, centered  */
+  {
+    id: "s1",
+    startFrame: 0,
+    endFrame: 22,
+    position: "center",
+    wordStaggerFrames: 2,
+    layout: {
+      type: "group",
+      direction: "horizontal",
+      gap: 14,
+      alignItems: "center",
+      children: [
+        {
+          type: "word",
+          text: "I",
+          style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
+        },
+        {
+          type: "word",
+          text: "was",
+          style: {
+            fontFamily: fontScript,
+            fontSize: 64,
+            fontStyle: "italic",
+            color: "#f3f3f3",
+          },
+        },
+        {
+          type: "word",
+          text: "scrolling",
+          style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
+        },
+      ],
+    },
+  },
 
+  /* ── Section 2 ──
+     "on X and I"
+     • "on"  → normal
+     • "X"   → big bold brand-style
+     • "and I" → "and" formal, "I" italic, arranged LEFT-TO-RIGHT
+     • The whole thing sits TOP-LEFT and flows TOP-TO-BOTTOM
+  */
+  {
+    id: "s2",
+    startFrame: 16,
+    endFrame: 44,
+    position: "top-left",
+    wordStaggerFrames: 3,
+    layout: {
+      type: "group",
+      direction: "vertical",
+      gap: 6,
+      alignItems: "flex-start",
+      children: [
+        {
+          type: "word",
+          text: "on",
+          style: { fontFamily: fontMono, fontSize: 46, fontWeight: "bold" },
+        },
+        {
+          type: "word",
+          text: "X",
+          style: {
+            fontFamily: fontOswald,
+            fontSize: 96,
+            fontWeight: "bold",
+            letterSpacing: "-0.02em",
+            textShadow: "0 4px 24px rgba(0,0,0,0.6)",
+          },
+        },
+        {
+          /* nested horizontal group: "and I" */
+          type: "group",
+          direction: "horizontal",
+          gap: 10,
+          alignItems: "center",
+          children: [
+            {
+              type: "word",
+              text: "and",
+              style: {
+                fontFamily: fontFormal,
+                fontSize: 44,
+                color: "#e8e8e8",
+              },
+            },
+            {
+              type: "word",
+              text: "I",
+              style: {
+                fontFamily: fontInter,
+                fontSize: 50,
+                fontStyle: "italic",
+                fontWeight: 600,
+              },
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  /* ── Section 3 ──
+     "came across" → horizontal, centered  */
+  {
+    id: "s3",
+    startFrame: 36,
+    endFrame: 62,
+    position: "center",
+    wordStaggerFrames: 2,
+    layout: {
+      type: "group",
+      direction: "horizontal",
+      gap: 16,
+      alignItems: "center",
+      children: [
+        {
+          type: "word",
+          text: "came",
+          style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
+        },
+        {
+          type: "word",
+          text: "across",
+          style: {
+            fontFamily: fontScript,
+            fontSize: 66,
+            fontStyle: "italic",
+            fontWeight: 300,
+            letterSpacing: "-0.01em",
+          },
+        },
+      ],
+    },
+  },
+];
+
+/* ─────────────────────────────────────────
+   8. OPTIONAL: Auto-generator from transcript
+   (Use this if you want to derive scenes from
+   your existing Segment[] data instead of
+   hand-crafting every scene.)
+   ───────────────────────────────────────── */
+const STYLE_PALETTE = {
+  normal:  { fontFamily: fontMono,     fontSize: 56, fontWeight: "bold" as const },
+  stylish: { fontFamily: fontScript,   fontSize: 62, fontStyle: "italic" as const },
+  big:     { fontFamily: fontOswald,   fontSize: 84, fontWeight: "bold" as const },
+  formal:  { fontFamily: fontFormal,   fontSize: 48 },
+};
+
+const autoBuildScenes = (transcript: Segment[], fps: number): KineticScene[] => {
+  const scenes: KineticScene[] = [];
+
+  transcript.forEach((seg) => {
+    const words = seg.text.trim().split(/\s+/).filter(Boolean);
+    const segStart = Math.floor((seg.startMs / 1000) * fps);
+    const segEnd   = Math.ceil((seg.endMs / 1000) * fps);
+    const segDur   = segEnd - segStart;
+
+    // Chunk into groups of 2-3 words
+    const chunks: string[][] = [];
+    let i = 0;
+    while (i < words.length) {
+      const size = Math.min(words.length - i, 2 + Math.floor(Math.random() * 2)); // 2 or 3
+      chunks.push(words.slice(i, i + size));
+      i += size;
+    }
+
+    const chunkDur = Math.max(10, Math.floor(segDur / chunks.length));
+
+    chunks.forEach((chunk, idx) => {
+      const start = segStart + idx * chunkDur;
+      const end   = Math.min(start + chunkDur + 8, segEnd); // +8 frames overlap
+
+      const isVertical = Math.random() > 0.65;
+      const positions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+      const position = isVertical
+        ? positions[Math.floor(Math.random() * positions.length)]
+        : "center";
+
+      const children: KineticNode[] = chunk.map((w) => {
+        const keys = Object.keys(STYLE_PALETTE) as (keyof typeof STYLE_PALETTE)[];
+        const pick = keys[Math.floor(Math.random() * keys.length)];
+        return {
+          type: "word",
+          text: w,
+          style: { ...STYLE_PALETTE[pick], color: "#fff" },
+        };
+      });
+
+      scenes.push({
+        id: `${seg.id}_${idx}`,
+        startFrame: start,
+        endFrame: end,
+        position,
+        wordStaggerFrames: 2,
+        layout: {
+          type: "group",
+          direction: isVertical ? "vertical" : "horizontal",
+          gap: isVertical ? 6 : 14,
+          alignItems: "center",
+          children,
+        },
+      });
+    });
+  });
+
+  return scenes;
+};
+
+/* ─────────────────────────────────────────
+   9. MAIN COMPONENT
+   ───────────────────────────────────────── */
 export const CaptionComp: React.FC<CaptionCompProps> = ({ transcript }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-//   const currentMs = (frame / fps) * 1000;
-
-  const captionChunks = useMemo(
-    () => transcript.flatMap(splitSegmentIntoCaptionChunks),
-    [transcript]
-  );
-
-    const captionMap = useMemo(
-      () => buildCaptionMap(captionChunks, fps),
-      [captionChunks, fps]
-    );
-
-//   const activeCaption = captionChunks.find(
-//     (caption) => currentMs >= caption.startMs && currentMs < caption.endMs
-//   );
-
+  /* Toggle between hand-crafted example and auto-generator: */
+  const scenes = useMemo(() => {
+    return autoBuildScenes(transcript, fps);   // ← use this for automatic
+    // return EXAMPLE_SCENES;                       // ← hand-crafted example
+  }, [transcript, fps]);
 
   return (
     <AbsoluteFill>
       <Video src={staticFile("video1.mp4")} />
-      {/* <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            color: "white",
-            fontFamily,
-            fontSize: 60,
-            fontWeight: "bold",
-            textAlign: "center",
-            maxWidth: "80%",
-            textShadow: "0 0 10px rgba(0,0,0,0.9)",
-          }}
-        >
-          {activeCaption?.text}
-        </div>
-      </AbsoluteFill> */}
-      <CaptionOverlay captionMap={captionMap} frame={frame} />
+
+      {scenes.map((scene) => (
+        <KineticSceneRenderer
+          key={scene.id}
+          scene={scene}
+          frame={frame}
+          fps={fps}
+        />
+      ))}
     </AbsoluteFill>
   );
 };
