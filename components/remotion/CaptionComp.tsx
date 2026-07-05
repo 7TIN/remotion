@@ -159,6 +159,8 @@ const renderKineticNode = (
   stagger: number,
   sequenceIndex: number,
   parentDirection: "horizontal" | "vertical",
+  isRoot: boolean = false,
+  scenePosition: string = "",
 ): RenderResult => {
   if (node.type === "word") {
     const wordFrame = frame - sequenceIndex * stagger;
@@ -190,6 +192,8 @@ const renderKineticNode = (
       stagger,
       currentSeq,
       node.direction,
+      false,
+      scenePosition,
     );
     children.push(
       <div key={`c-${i}`} style={{ display: "contents" }}>
@@ -206,7 +210,13 @@ const renderKineticNode = (
         display: "flex",
         flexDirection: node.direction === "horizontal" ? "row" : "column",
         gap: node.gap ?? (node.direction === "horizontal" ? 14 : 8),
-        alignItems: node.alignItems ?? "center",
+        alignItems:
+          isRoot && scenePosition === "center"
+            ? "center"
+            : (node.alignItems ??
+              (node.direction === "vertical" ? "flex-start" : "center")),
+        justifyContent:
+          isRoot && scenePosition === "center" ? "center" : undefined,
       }}
     >
       {children}
@@ -254,6 +264,8 @@ const KineticSceneRenderer = React.memo<{
     scene.wordStaggerFrames ?? 2,
     0,
     scene.layout.direction,
+    true,
+    scene.position,
   );
 
   return (
@@ -468,8 +480,14 @@ const autoBuildScenes = (
       const end = Math.min(start + chunkDur, segEnd);
 
       const isVertical = Math.random() > 0.7;
-      // const positions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
-      const positions = ["center"] as const;
+      const positions = [
+        "top-left",
+        "top-right",
+        "bottom-left",
+        "bottom-right",
+        "center",
+      ] as const;
+      // const positions = ["center"] as const;
 
       const position = isVertical
         ? positions[Math.floor(Math.random() * positions.length)]
