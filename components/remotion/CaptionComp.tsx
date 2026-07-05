@@ -14,6 +14,8 @@ import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { loadFont as loadOswald } from "@remotion/google-fonts/Oswald";
 import { loadFont as loadMerriweather } from "@remotion/google-fonts/Merriweather";
 import { loadFont as loadDancingScript } from "@remotion/google-fonts/DancingScript";
+import { loadFont as loadEAVWNH } from "@remotion/google-fonts/EduAUVICWANTHand";
+
 
 // const dancingScript = Dancing_Script({ subsets: ["latin"] });
 /* ─────────────────────────────────────────
@@ -26,6 +28,10 @@ const { fontFamily: fontMono } = loadGeistMono("normal", {
 const { fontFamily: fontInter } = loadInter("normal", { subsets: ["latin"] });
 const { fontFamily: fontOswald } = loadOswald("normal", { subsets: ["latin"] });
 const { fontFamily: fontScript } = loadDancingScript("normal", {
+  subsets: ["latin"],
+});
+
+const { fontFamily: fontChill } = loadEAVWNH("normal", {
   subsets: ["latin"],
 });
 const { fontFamily: fontFormal } = loadMerriweather("normal", {
@@ -215,8 +221,8 @@ const renderKineticNode = (
             ? "center"
             : (node.alignItems ??
               (node.direction === "vertical" ? "flex-start" : "center")),
-        justifyContent:
-          isRoot && scenePosition === "center" ? "center" : undefined,
+        // justifyContent:
+        //   isRoot && scenePosition === "center" ? "center" : undefined,
       }}
     >
       {children}
@@ -439,14 +445,28 @@ KineticSceneRenderer.displayName = "KineticSceneRenderer";
    ───────────────────────────────────────── */
 const STYLE_PALETTE = {
   normal: { fontFamily: fontMono, fontSize: 62, fontWeight: "bold" as const },
-  stylish: {
-    fontFamily: fontScript,
-    fontSize: 74,
-    fontStyle: "italic" as const,
-  },
+  // stylish: {
+  //   fontFamily: fontScript,
+  //   fontSize: 74,
+  //   fontStyle: "italic" as const,
+  // },
+  chill: {fontFamily : fontChill, fontSize : 74, fontStyle: "italic" as const},
   big: { fontFamily: fontOswald, fontSize: 92, fontWeight: "bold" as const },
   formal: { fontFamily: fontFormal, fontSize: 56 },
 };
+
+// const STYLE_PALETTE = {
+//   normal: { fontFamily: fontMono, fontSize: 62, fontWeight: "bold" as const },
+//   stylish: {
+//     fontFamily: fontInter,
+//     fontSize: 74,
+//     fontWeight: 700,
+//     fontStyle: "italic",
+//     letterSpacing: "-0.02em",
+//   },
+//   big: { fontFamily: fontOswald, fontSize: 92, fontWeight: "bold" as const },
+//   formal: { fontFamily: fontFormal, fontSize: 56 },
+// };
 
 const autoBuildScenes = (
   transcript: Segment[],
@@ -480,14 +500,14 @@ const autoBuildScenes = (
       const end = Math.min(start + chunkDur, segEnd);
 
       const isVertical = Math.random() > 0.7;
-      const positions = [
-        "top-left",
-        "top-right",
-        "bottom-left",
-        "bottom-right",
-        "center",
-      ] as const;
-      // const positions = ["center"] as const;
+      // const positions = [
+      //   "top-left",
+      //   "top-right",
+      //   "bottom-left",
+      //   "bottom-right",
+      //   "center",
+      // ] as const;
+      const positions = ["center"] as const;
 
       const position = isVertical
         ? positions[Math.floor(Math.random() * positions.length)]
