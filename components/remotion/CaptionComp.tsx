@@ -19,12 +19,18 @@ import { loadFont as loadDancingScript } from "@remotion/google-fonts/DancingScr
 /* ─────────────────────────────────────────
    1. FONT LOADING (module level)
    ───────────────────────────────────────── */
-  //  Dancing_Script
-const { fontFamily: fontMono } = loadGeistMono("normal", { subsets: ["latin"] });
+//  Dancing_Script
+const { fontFamily: fontMono } = loadGeistMono("normal", {
+  subsets: ["latin"],
+});
 const { fontFamily: fontInter } = loadInter("normal", { subsets: ["latin"] });
 const { fontFamily: fontOswald } = loadOswald("normal", { subsets: ["latin"] });
-const { fontFamily: fontScript } = loadDancingScript("normal", { subsets: ["latin"] });
-const { fontFamily: fontFormal } = loadMerriweather("normal", { subsets: ["latin"] });
+const { fontFamily: fontScript } = loadDancingScript("normal", {
+  subsets: ["latin"],
+});
+const { fontFamily: fontFormal } = loadMerriweather("normal", {
+  subsets: ["latin"],
+});
 
 /* ─────────────────────────────────────────
    2. TYPES
@@ -65,11 +71,16 @@ type KineticNode = WordNode | GroupNode;
 
 type KineticScene = {
   id: string;
-  layout: GroupNode;              // root is always a group
-  position: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  layout: GroupNode; // root is always a group
+  position:
+    | "center"
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right";
   startFrame: number;
   endFrame: number;
-  wordStaggerFrames?: number;      // frames between each word appearance
+  wordStaggerFrames?: number; // frames between each word appearance
 };
 
 type CaptionCompProps = {
@@ -90,7 +101,7 @@ const DEFAULT_WORD_STYLE: WordStyle = {
 const AnimatedWord = React.memo<{
   text: string;
   style?: WordStyle;
-  frame: number;          // relative to this word's scheduled entrance
+  frame: number; // relative to this word's scheduled entrance
   fps: number;
   entranceFrom: "left" | "top";
 }>(({ text, style, frame, fps, entranceFrom }) => {
@@ -147,7 +158,7 @@ const renderKineticNode = (
   fps: number,
   stagger: number,
   sequenceIndex: number,
-  parentDirection: "horizontal" | "vertical"
+  parentDirection: "horizontal" | "vertical",
 ): RenderResult => {
   if (node.type === "word") {
     const wordFrame = frame - sequenceIndex * stagger;
@@ -178,12 +189,12 @@ const renderKineticNode = (
       fps,
       stagger,
       currentSeq,
-      node.direction
+      node.direction,
     );
     children.push(
       <div key={`c-${i}`} style={{ display: "contents" }}>
         {result.element}
-      </div>
+      </div>,
     );
     currentSeq = result.nextSequence;
   });
@@ -220,19 +231,20 @@ const KineticSceneRenderer = React.memo<{
   const duration = scene.endFrame - scene.startFrame;
 
   // Scene-level fade in / fade out
-  const sceneOpacity = interpolate(
-    relativeFrame,
-    [0, 4, duration - 6, duration],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+  // const sceneOpacity = interpolate(
+  //   relativeFrame,
+  //   [0, 4, duration - 4, duration],
+  //   [0, 1, 1, 0],
+  //   { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  // );
+  const sceneOpacity = 1;
 
   const positionMap: Record<string, React.CSSProperties> = {
     center: { justifyContent: "center", alignItems: "center" },
-    "top-left": { justifyContent: "flex-start", alignItems: "flex-start" },
-    "top-right": { justifyContent: "flex-start", alignItems: "flex-end" },
-    "bottom-left": { justifyContent: "flex-end", alignItems: "flex-start" },
-    "bottom-right": { justifyContent: "flex-end", alignItems: "flex-end" },
+    // "top-left": { justifyContent: "flex-start", alignItems: "flex-start"},
+    // "top-right": { justifyContent: "flex-start", alignItems: "flex-end" },
+    // "bottom-left": { justifyContent: "flex-end", alignItems: "flex-start" },
+    // "bottom-right": { justifyContent: "flex-end", alignItems: "flex-end" },
   };
 
   const { element } = renderKineticNode(
@@ -241,14 +253,14 @@ const KineticSceneRenderer = React.memo<{
     fps,
     scene.wordStaggerFrames ?? 2,
     0,
-    scene.layout.direction
+    scene.layout.direction,
   );
 
   return (
     <AbsoluteFill
       style={{
         display: "flex",
-        padding: 60,
+        padding: 120,
         pointerEvents: "none",
         opacity: sceneOpacity,
         ...positionMap[scene.position],
@@ -266,146 +278,146 @@ KineticSceneRenderer.displayName = "KineticSceneRenderer";
    Phrase: "I was scrolling on X and I came across"
    Assumed 30 fps → 2 sec = 60 frames
    ───────────────────────────────────────── */
-const EXAMPLE_SCENES: KineticScene[] = [
-  /* ── Section 1 ──
-     "I was scrolling"  →  horizontal, centered  */
-  {
-    id: "s1",
-    startFrame: 0,
-    endFrame: 22,
-    position: "center",
-    wordStaggerFrames: 2,
-    layout: {
-      type: "group",
-      direction: "horizontal",
-      gap: 14,
-      alignItems: "center",
-      children: [
-        {
-          type: "word",
-          text: "I",
-          style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
-        },
-        {
-          type: "word",
-          text: "was",
-          style: {
-            fontFamily: fontScript,
-            fontSize: 64,
-            fontStyle: "italic",
-            color: "#f3f3f3",
-          },
-        },
-        {
-          type: "word",
-          text: "scrolling",
-          style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
-        },
-      ],
-    },
-  },
+// const EXAMPLE_SCENES: KineticScene[] = [
+//   /* ── Section 1 ──
+//      "I was scrolling"  →  horizontal, centered  */
+//   {
+//     id: "s1",
+//     startFrame: 0,
+//     endFrame: 22,
+//     position: "center",
+//     wordStaggerFrames: 2,
+//     layout: {
+//       type: "group",
+//       direction: "horizontal",
+//       gap: 14,
+//       alignItems: "center",
+//       children: [
+//         {
+//           type: "word",
+//           text: "I",
+//           style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
+//         },
+//         {
+//           type: "word",
+//           text: "was",
+//           style: {
+//             fontFamily: fontScript,
+//             fontSize: 64,
+//             fontStyle: "italic",
+//             color: "#f3f3f3",
+//           },
+//         },
+//         {
+//           type: "word",
+//           text: "scrolling",
+//           style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
+//         },
+//       ],
+//     },
+//   },
 
-  /* ── Section 2 ──
-     "on X and I"
-     • "on"  → normal
-     • "X"   → big bold brand-style
-     • "and I" → "and" formal, "I" italic, arranged LEFT-TO-RIGHT
-     • The whole thing sits TOP-LEFT and flows TOP-TO-BOTTOM
-  */
-  {
-    id: "s2",
-    startFrame: 16,
-    endFrame: 44,
-    position: "top-left",
-    wordStaggerFrames: 3,
-    layout: {
-      type: "group",
-      direction: "vertical",
-      gap: 6,
-      alignItems: "flex-start",
-      children: [
-        {
-          type: "word",
-          text: "on",
-          style: { fontFamily: fontMono, fontSize: 46, fontWeight: "bold" },
-        },
-        {
-          type: "word",
-          text: "X",
-          style: {
-            fontFamily: fontOswald,
-            fontSize: 96,
-            fontWeight: "bold",
-            letterSpacing: "-0.02em",
-            textShadow: "0 4px 24px rgba(0,0,0,0.6)",
-          },
-        },
-        {
-          /* nested horizontal group: "and I" */
-          type: "group",
-          direction: "horizontal",
-          gap: 10,
-          alignItems: "center",
-          children: [
-            {
-              type: "word",
-              text: "and",
-              style: {
-                fontFamily: fontFormal,
-                fontSize: 44,
-                color: "#e8e8e8",
-              },
-            },
-            {
-              type: "word",
-              text: "I",
-              style: {
-                fontFamily: fontInter,
-                fontSize: 50,
-                fontStyle: "italic",
-                fontWeight: 600,
-              },
-            },
-          ],
-        },
-      ],
-    },
-  },
+//   /* ── Section 2 ──
+//      "on X and I"
+//      • "on"  → normal
+//      • "X"   → big bold brand-style
+//      • "and I" → "and" formal, "I" italic, arranged LEFT-TO-RIGHT
+//      • The whole thing sits TOP-LEFT and flows TOP-TO-BOTTOM
+//   */
+//   {
+//     id: "s2",
+//     startFrame: 16,
+//     endFrame: 44,
+//     position: "top-left",
+//     wordStaggerFrames: 3,
+//     layout: {
+//       type: "group",
+//       direction: "vertical",
+//       gap: 6,
+//       alignItems: "flex-start",
+//       children: [
+//         {
+//           type: "word",
+//           text: "on",
+//           style: { fontFamily: fontMono, fontSize: 46, fontWeight: "bold" },
+//         },
+//         {
+//           type: "word",
+//           text: "X",
+//           style: {
+//             fontFamily: fontOswald,
+//             fontSize: 96,
+//             fontWeight: "bold",
+//             letterSpacing: "-0.02em",
+//             textShadow: "0 4px 24px rgba(0,0,0,0.6)",
+//           },
+//         },
+//         {
+//           /* nested horizontal group: "and I" */
+//           type: "group",
+//           direction: "horizontal",
+//           gap: 10,
+//           alignItems: "center",
+//           children: [
+//             {
+//               type: "word",
+//               text: "and",
+//               style: {
+//                 fontFamily: fontFormal,
+//                 fontSize: 44,
+//                 color: "#e8e8e8",
+//               },
+//             },
+//             {
+//               type: "word",
+//               text: "I",
+//               style: {
+//                 fontFamily: fontInter,
+//                 fontSize: 50,
+//                 fontStyle: "italic",
+//                 fontWeight: 600,
+//               },
+//             },
+//           ],
+//         },
+//       ],
+//     },
+//   },
 
-  /* ── Section 3 ──
-     "came across" → horizontal, centered  */
-  {
-    id: "s3",
-    startFrame: 36,
-    endFrame: 62,
-    position: "center",
-    wordStaggerFrames: 2,
-    layout: {
-      type: "group",
-      direction: "horizontal",
-      gap: 16,
-      alignItems: "center",
-      children: [
-        {
-          type: "word",
-          text: "came",
-          style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
-        },
-        {
-          type: "word",
-          text: "across",
-          style: {
-            fontFamily: fontScript,
-            fontSize: 66,
-            fontStyle: "italic",
-            fontWeight: 300,
-            letterSpacing: "-0.01em",
-          },
-        },
-      ],
-    },
-  },
-];
+//   /* ── Section 3 ──
+//      "came across" → horizontal, centered  */
+//   {
+//     id: "s3",
+//     startFrame: 36,
+//     endFrame: 62,
+//     position: "center",
+//     wordStaggerFrames: 2,
+//     layout: {
+//       type: "group",
+//       direction: "horizontal",
+//       gap: 16,
+//       alignItems: "center",
+//       children: [
+//         {
+//           type: "word",
+//           text: "came",
+//           style: { fontFamily: fontMono, fontSize: 58, fontWeight: "bold" },
+//         },
+//         {
+//           type: "word",
+//           text: "across",
+//           style: {
+//             fontFamily: fontScript,
+//             fontSize: 66,
+//             fontStyle: "italic",
+//             fontWeight: 300,
+//             letterSpacing: "-0.01em",
+//           },
+//         },
+//       ],
+//     },
+//   },
+// ];
 
 /* ─────────────────────────────────────────
    8. OPTIONAL: Auto-generator from transcript
@@ -414,26 +426,36 @@ const EXAMPLE_SCENES: KineticScene[] = [
    hand-crafting every scene.)
    ───────────────────────────────────────── */
 const STYLE_PALETTE = {
-  normal:  { fontFamily: fontMono,     fontSize: 56, fontWeight: "bold" as const },
-  stylish: { fontFamily: fontScript,   fontSize: 62, fontStyle: "italic" as const },
-  big:     { fontFamily: fontOswald,   fontSize: 84, fontWeight: "bold" as const },
-  formal:  { fontFamily: fontFormal,   fontSize: 48 },
+  normal: { fontFamily: fontMono, fontSize: 62, fontWeight: "bold" as const },
+  stylish: {
+    fontFamily: fontScript,
+    fontSize: 74,
+    fontStyle: "italic" as const,
+  },
+  big: { fontFamily: fontOswald, fontSize: 92, fontWeight: "bold" as const },
+  formal: { fontFamily: fontFormal, fontSize: 56 },
 };
 
-const autoBuildScenes = (transcript: Segment[], fps: number): KineticScene[] => {
+const autoBuildScenes = (
+  transcript: Segment[],
+  fps: number,
+): KineticScene[] => {
   const scenes: KineticScene[] = [];
 
   transcript.forEach((seg) => {
     const words = seg.text.trim().split(/\s+/).filter(Boolean);
     const segStart = Math.floor((seg.startMs / 1000) * fps);
-    const segEnd   = Math.ceil((seg.endMs / 1000) * fps);
-    const segDur   = segEnd - segStart;
+    const segEnd = Math.ceil((seg.endMs / 1000) * fps);
+    const segDur = segEnd - segStart;
 
     // Chunk into groups of 2-3 words
     const chunks: string[][] = [];
     let i = 0;
     while (i < words.length) {
-      const size = Math.min(words.length - i, 2 + Math.floor(Math.random() * 2)); // 2 or 3
+      const size = Math.min(
+        words.length - i,
+        2 + Math.floor(Math.random() * 2),
+      ); // 2 or 3
       chunks.push(words.slice(i, i + size));
       i += size;
     }
@@ -442,16 +464,21 @@ const autoBuildScenes = (transcript: Segment[], fps: number): KineticScene[] => 
 
     chunks.forEach((chunk, idx) => {
       const start = segStart + idx * chunkDur;
-      const end   = Math.min(start + chunkDur + 8, segEnd); // +8 frames overlap
+      // const end = Math.min(start + chunkDur + 8, segEnd); // +8 frames overlap
+      const end = Math.min(start + chunkDur, segEnd);
 
-      const isVertical = Math.random() > 0.65;
-      const positions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+      const isVertical = Math.random() > 0.7;
+      // const positions = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+      const positions = ["center"] as const;
+
       const position = isVertical
         ? positions[Math.floor(Math.random() * positions.length)]
         : "center";
 
       const children: KineticNode[] = chunk.map((w) => {
-        const keys = Object.keys(STYLE_PALETTE) as (keyof typeof STYLE_PALETTE)[];
+        const keys = Object.keys(
+          STYLE_PALETTE,
+        ) as (keyof typeof STYLE_PALETTE)[];
         const pick = keys[Math.floor(Math.random() * keys.length)];
         return {
           type: "word",
@@ -469,7 +496,8 @@ const autoBuildScenes = (transcript: Segment[], fps: number): KineticScene[] => 
         layout: {
           type: "group",
           direction: isVertical ? "vertical" : "horizontal",
-          gap: isVertical ? 6 : 14,
+          gap: isVertical ? 8 : 14,
+          // gap: isVertical ? 6 : 14,
           alignItems: "center",
           children,
         },
@@ -489,7 +517,7 @@ export const CaptionComp: React.FC<CaptionCompProps> = ({ transcript }) => {
 
   /* Toggle between hand-crafted example and auto-generator: */
   const scenes = useMemo(() => {
-    return autoBuildScenes(transcript, fps);   // ← use this for automatic
+    return autoBuildScenes(transcript, fps); // ← use this for automatic
     // return EXAMPLE_SCENES;                       // ← hand-crafted example
   }, [transcript, fps]);
 
@@ -497,14 +525,24 @@ export const CaptionComp: React.FC<CaptionCompProps> = ({ transcript }) => {
     <AbsoluteFill>
       <Video src={staticFile("video1.mp4")} />
 
-      {scenes.map((scene) => (
+      {/* {scenes.map((scene) => (
         <KineticSceneRenderer
           key={scene.id}
           scene={scene}
           frame={frame}
           fps={fps}
         />
-      ))}
+      ))} */}
+
+      {(() => {
+        const active = scenes.filter(
+          (s) => frame >= s.startFrame && frame < s.endFrame,
+        );
+        const latest = active.sort((a, b) => b.startFrame - a.startFrame)[0];
+        return latest ? (
+          <KineticSceneRenderer scene={latest} frame={frame} fps={fps} />
+        ) : null;
+      })()}
     </AbsoluteFill>
   );
 };
