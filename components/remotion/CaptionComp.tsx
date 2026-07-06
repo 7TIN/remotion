@@ -13,7 +13,6 @@ import { loadFont as loadGeistMono } from "@remotion/google-fonts/GeistMono";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { loadFont as loadOswald } from "@remotion/google-fonts/Oswald";
 import { loadFont as loadMerriweather } from "@remotion/google-fonts/Merriweather";
-import { loadFont as loadDancingScript } from "@remotion/google-fonts/DancingScript";
 import { loadFont as loadEAVWNH } from "@remotion/google-fonts/EduAUVICWANTHand";
 
 
@@ -27,10 +26,6 @@ const { fontFamily: fontMono } = loadGeistMono("normal", {
 });
 const { fontFamily: fontInter } = loadInter("normal", { subsets: ["latin"] });
 const { fontFamily: fontOswald } = loadOswald("normal", { subsets: ["latin"] });
-const { fontFamily: fontScript } = loadDancingScript("normal", {
-  subsets: ["latin"],
-});
-
 const { fontFamily: fontChill } = loadEAVWNH("normal", {
   subsets: ["latin"],
 });
@@ -87,10 +82,35 @@ type KineticScene = {
   startFrame: number;
   endFrame: number;
   wordStaggerFrames?: number; // frames between each word appearance
+  entranceFrom?: "left" | "right" | "top" | "bottom";
+};
+
+export type KineticCaptionPreset =
+  | "aesthetic"
+  | "editorial"
+  | "punchy"
+  | "minimal";
+
+export type KineticCaptionStyle = {
+  preset: KineticCaptionPreset;
+  primaryFont: string;
+  secondaryFont: string;
+  emotionFont: string;
+  formalFont: string;
+  boldFont: string;
+  color: string;
+  mutedColor: string;
+  accentColor: string;
+  stylishFrequency: number;
+  verticalFrequency: number;
+  boldFrequency: number;
+  maxWordsPerScene: 2 | 3 | 4;
 };
 
 type CaptionCompProps = {
   transcript: Segment[];
+  stylePreset?: KineticCaptionPreset;
+  captionStyle?: Partial<KineticCaptionStyle>;
 };
 
 /* ─────────────────────────────────────────
@@ -109,7 +129,7 @@ const AnimatedWord = React.memo<{
   style?: WordStyle;
   frame: number; // relative to this word's scheduled entrance
   fps: number;
-  entranceFrom: "left" | "top";
+  entranceFrom: "left" | "right" | "top" | "bottom";
 }>(({ text, style, frame, fps, entranceFrom }) => {
   const progress = spring({
     frame: Math.max(0, frame),
@@ -122,8 +142,14 @@ const AnimatedWord = React.memo<{
     extrapolateRight: "clamp",
   });
 
-  const fromVal = entranceFrom === "left" ? -70 : -45;
-  const translateProp = entranceFrom === "left" ? "translateX" : "translateY";
+  const isHorizontal = entranceFrom === "left" || entranceFrom === "right";
+  const fromVal =
+    entranceFrom === "right" || entranceFrom === "bottom"
+      ? 58
+      : isHorizontal
+        ? -70
+        : -48;
+  const translateProp = isHorizontal ? "translateX" : "translateY";
   const translate = interpolate(progress, [0, 1], [fromVal, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -167,10 +193,12 @@ const renderKineticNode = (
   parentDirection: "horizontal" | "vertical",
   isRoot: boolean = false,
   scenePosition: string = "",
+  entranceFrom?: "left" | "right" | "top" | "bottom",
 ): RenderResult => {
   if (node.type === "word") {
     const wordFrame = frame - sequenceIndex * stagger;
-    const entranceFrom = parentDirection === "horizontal" ? "left" : "top";
+    const wordEntrance =
+      entranceFrom ?? (parentDirection === "horizontal" ? "left" : "top");
 
     return {
       element: (
@@ -180,7 +208,7 @@ const renderKineticNode = (
           style={node.style}
           frame={wordFrame}
           fps={fps}
-          entranceFrom={entranceFrom}
+          entranceFrom={wordEntrance}
         />
       ),
       nextSequence: sequenceIndex + 1,
@@ -200,6 +228,7 @@ const renderKineticNode = (
       node.direction,
       false,
       scenePosition,
+      entranceFrom,
     );
     children.push(
       <div key={`c-${i}`} style={{ display: "contents" }}>
@@ -244,7 +273,6 @@ const KineticSceneRenderer = React.memo<{
   if (!isVisible) return null;
 
   const relativeFrame = frame - scene.startFrame;
-  const duration = scene.endFrame - scene.startFrame;
 
   // Scene-level fade in / fade out
   // const sceneOpacity = interpolate(
@@ -257,10 +285,10 @@ const KineticSceneRenderer = React.memo<{
 
   const positionMap: Record<string, React.CSSProperties> = {
     center: { justifyContent: "center", alignItems: "center" },
-    // "top-left": { justifyContent: "flex-start", alignItems: "flex-start"},
-    // "top-right": { justifyContent: "flex-start", alignItems: "flex-end" },
-    // "bottom-left": { justifyContent: "flex-end", alignItems: "flex-start" },
-    // "bottom-right": { justifyContent: "flex-end", alignItems: "flex-end" },
+    "top-left": { justifyContent: "flex-start", alignItems: "flex-start" },
+    "top-right": { justifyContent: "flex-start", alignItems: "flex-end" },
+    "bottom-left": { justifyContent: "flex-end", alignItems: "flex-start" },
+    "bottom-right": { justifyContent: "flex-end", alignItems: "flex-end" },
   };
 
   const { element } = renderKineticNode(
@@ -272,6 +300,7 @@ const KineticSceneRenderer = React.memo<{
     scene.layout.direction,
     true,
     scene.position,
+    scene.entranceFrom,
   );
 
   return (
@@ -279,6 +308,7 @@ const KineticSceneRenderer = React.memo<{
       style={{
         display: "flex",
         padding: 120,
+        boxSizing: "border-box",
         pointerEvents: "none",
         opacity: sceneOpacity,
         ...positionMap[scene.position],
@@ -443,34 +473,381 @@ KineticSceneRenderer.displayName = "KineticSceneRenderer";
    your existing Segment[] data instead of
    hand-crafting every scene.)
    ───────────────────────────────────────── */
-const STYLE_PALETTE = {
-  normal: { fontFamily: fontMono, fontSize: 62, fontWeight: "bold" as const },
-  // stylish: {
-  //   fontFamily: fontScript,
-  //   fontSize: 74,
-  //   fontStyle: "italic" as const,
-  // },
-  chill: {fontFamily : fontChill, fontSize : 74, fontStyle: "italic" as const},
-  big: { fontFamily: fontOswald, fontSize: 92, fontWeight: "bold" as const },
-  formal: { fontFamily: fontFormal, fontSize: 56 },
+const FONT_STACKS = {
+  appleGaramond:
+    "Apple Garamond, Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif",
+  impact: "Impact, Haettenschweiler, Arial Narrow Bold, sans-serif",
+  interBlack: fontInter,
 };
 
-// const STYLE_PALETTE = {
-//   normal: { fontFamily: fontMono, fontSize: 62, fontWeight: "bold" as const },
-//   stylish: {
-//     fontFamily: fontInter,
-//     fontSize: 74,
-//     fontWeight: 700,
-//     fontStyle: "italic",
-//     letterSpacing: "-0.02em",
-//   },
-//   big: { fontFamily: fontOswald, fontSize: 92, fontWeight: "bold" as const },
-//   formal: { fontFamily: fontFormal, fontSize: 56 },
-// };
+const PRESET_STYLES: Record<KineticCaptionPreset, KineticCaptionStyle> = {
+  aesthetic: {
+    preset: "aesthetic",
+    primaryFont: fontInter,
+    secondaryFont: fontMono,
+    emotionFont: `${FONT_STACKS.appleGaramond}, ${fontChill}`,
+    formalFont: fontFormal,
+    boldFont: FONT_STACKS.impact,
+    color: "#ffffff",
+    mutedColor: "#f1efe9",
+    accentColor: "#fff36d",
+    stylishFrequency: 0.22,
+    verticalFrequency: 0.34,
+    boldFrequency: 0.18,
+    maxWordsPerScene: 3,
+  },
+  editorial: {
+    preset: "editorial",
+    primaryFont: fontFormal,
+    secondaryFont: fontInter,
+    emotionFont: FONT_STACKS.appleGaramond,
+    formalFont: fontFormal,
+    boldFont: fontOswald,
+    color: "#ffffff",
+    mutedColor: "#ececec",
+    accentColor: "#d9ff66",
+    stylishFrequency: 0.16,
+    verticalFrequency: 0.28,
+    boldFrequency: 0.12,
+    maxWordsPerScene: 3,
+  },
+  punchy: {
+    preset: "punchy",
+    primaryFont: fontInter,
+    secondaryFont: fontMono,
+    emotionFont: fontChill,
+    formalFont: fontFormal,
+    boldFont: FONT_STACKS.impact,
+    color: "#ffffff",
+    mutedColor: "#f7f7f7",
+    accentColor: "#ffef5c",
+    stylishFrequency: 0.18,
+    verticalFrequency: 0.45,
+    boldFrequency: 0.3,
+    maxWordsPerScene: 2,
+  },
+  minimal: {
+    preset: "minimal",
+    primaryFont: fontInter,
+    secondaryFont: fontFormal,
+    emotionFont: FONT_STACKS.appleGaramond,
+    formalFont: fontFormal,
+    boldFont: fontOswald,
+    color: "#ffffff",
+    mutedColor: "#eeeeee",
+    accentColor: "#ffffff",
+    stylishFrequency: 0.08,
+    verticalFrequency: 0.22,
+    boldFrequency: 0.08,
+    maxWordsPerScene: 3,
+  },
+};
+
+const CONNECTOR_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "but",
+  "for",
+  "from",
+  "i",
+  "if",
+  "in",
+  "is",
+  "it",
+  "of",
+  "on",
+  "or",
+  "so",
+  "the",
+  "to",
+  "was",
+  "were",
+  "with",
+  "you",
+]);
+
+const EMOTION_WORDS = new Set([
+  "amazing",
+  "beautiful",
+  "best",
+  "crazy",
+  "deep",
+  "dream",
+  "fast",
+  "famous",
+  "found",
+  "huge",
+  "important",
+  "insane",
+  "love",
+  "massive",
+  "never",
+  "new",
+  "quickly",
+  "rare",
+  "real",
+  "really",
+  "scrolling",
+  "secret",
+  "special",
+  "suddenly",
+  "viral",
+  "wild",
+]);
+
+const BRAND_WORDS = new Set([
+  "ai",
+  "apple",
+  "chatgpt",
+  "google",
+  "instagram",
+  "meta",
+  "openai",
+  "tiktok",
+  "twitter",
+  "x",
+  "youtube",
+]);
+
+const resolveCaptionStyle = (
+  stylePreset: KineticCaptionPreset = "aesthetic",
+  captionStyle?: Partial<KineticCaptionStyle>,
+): KineticCaptionStyle => {
+  const requestedPreset = captionStyle?.preset ?? stylePreset;
+  const base = PRESET_STYLES[requestedPreset] ?? PRESET_STYLES.aesthetic;
+  return {
+    ...base,
+    ...captionStyle,
+    preset: requestedPreset,
+  };
+};
+
+const hashString = (value: string): number => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+};
+
+const chance = (seed: string, frequency: number): boolean => {
+  return (hashString(seed) % 1000) / 1000 < frequency;
+};
+
+const cleanWord = (word: string): string => {
+  return word.toLowerCase().replace(/^[^\w]+|[^\w]+$/g, "");
+};
+
+const isBrandOrName = (word: string): boolean => {
+  const cleaned = cleanWord(word);
+  return (
+    BRAND_WORDS.has(cleaned) ||
+    /^[A-Z0-9]{2,}$/.test(word.replace(/[^\w]/g, "")) ||
+    /\d/.test(word)
+  );
+};
+
+const getWordStyle = (
+  word: string,
+  style: KineticCaptionStyle,
+  seed: string,
+  forceBold: boolean,
+): WordStyle => {
+  const cleaned = cleanWord(word);
+  const isConnector = CONNECTOR_WORDS.has(cleaned);
+  const isEmotion =
+    EMOTION_WORDS.has(cleaned) || /ing$|ly$|ful$|ous$|ive$/.test(cleaned);
+  const useStylish =
+    !forceBold && isEmotion && chance(`${seed}:stylish`, style.stylishFrequency);
+  const useFormal =
+    !forceBold && (isConnector || chance(`${seed}:formal`, 0.34));
+
+  if (forceBold) {
+    return {
+      fontFamily: style.boldFont,
+      fontSize: 104,
+      fontWeight: 900,
+      color: style.accentColor,
+      letterSpacing: "0",
+      textTransform: "uppercase",
+      textShadow: "0 8px 26px rgba(0,0,0,0.72), 0 0 34px rgba(0,0,0,0.4)",
+    };
+  }
+
+  if (useStylish) {
+    return {
+      fontFamily: style.emotionFont,
+      fontSize: 72,
+      fontWeight: 500,
+      fontStyle: "italic",
+      color: style.mutedColor,
+      letterSpacing: "0",
+    };
+  }
+
+  if (useFormal) {
+    return {
+      fontFamily: style.formalFont,
+      fontSize: 56,
+      fontWeight: isConnector ? 400 : 700,
+      fontStyle: cleaned === "i" ? "italic" : "normal",
+      color: style.mutedColor,
+      letterSpacing: "0",
+    };
+  }
+
+  return {
+    fontFamily: chance(`${seed}:secondary`, 0.28)
+      ? style.secondaryFont
+      : style.primaryFont,
+    fontSize: 62,
+    fontWeight: 800,
+    color: style.color,
+    letterSpacing: "0",
+  };
+};
+
+const splitIntoKineticChunks = (
+  words: string[],
+  segId: string,
+  maxWordsPerScene: 2 | 3 | 4,
+): string[][] => {
+  const chunks: string[][] = [];
+  let i = 0;
+
+  while (i < words.length) {
+    const remaining = words.length - i;
+    if (remaining <= maxWordsPerScene) {
+      chunks.push(words.slice(i));
+      break;
+    }
+
+    const rareLongChunk = maxWordsPerScene === 4 && chance(`${segId}:${i}:4`, 0.12);
+    const size = rareLongChunk
+      ? 4
+      : chance(`${segId}:${i}:3`, 0.38) && maxWordsPerScene >= 3
+        ? 3
+        : 2;
+    chunks.push(words.slice(i, i + Math.min(size, remaining)));
+    i += size;
+  }
+
+  return chunks;
+};
+
+const buildVerticalLayout = (
+  chunk: string[],
+  style: KineticCaptionStyle,
+  seed: string,
+): GroupNode => {
+  const children: KineticNode[] = [];
+  let wordIndex = 0;
+
+  while (wordIndex < chunk.length) {
+    const word = chunk[wordIndex];
+    const shouldBold =
+      isBrandOrName(word) || chance(`${seed}:${wordIndex}:bold`, style.boldFrequency);
+
+    if (shouldBold) {
+      children.push({
+        type: "word",
+        text: word,
+        style: getWordStyle(word, style, `${seed}:${wordIndex}`, true),
+      });
+      wordIndex += 1;
+      continue;
+    }
+
+    const nextWord = chunk[wordIndex + 1];
+    const shouldPair =
+      nextWord &&
+      !isBrandOrName(nextWord) &&
+      chance(`${seed}:${wordIndex}:pair`, 0.34);
+
+    if (shouldPair) {
+      children.push({
+        type: "group",
+        direction: "horizontal",
+        gap: 12,
+        alignItems: "center",
+        children: [
+          {
+            type: "word",
+            text: word,
+            style: getWordStyle(word, style, `${seed}:${wordIndex}`, false),
+          },
+          {
+            type: "word",
+            text: nextWord,
+            style: getWordStyle(nextWord, style, `${seed}:${wordIndex + 1}`, false),
+          },
+        ],
+      });
+      wordIndex += 2;
+      continue;
+    }
+
+    children.push({
+      type: "word",
+      text: word,
+      style: getWordStyle(word, style, `${seed}:${wordIndex}`, false),
+    });
+    wordIndex += 1;
+  }
+
+  return {
+    type: "group",
+    direction: "vertical",
+    gap: 8,
+    alignItems: chance(`${seed}:align-end`, 0.32) ? "flex-end" : "flex-start",
+    children,
+  };
+};
+
+const buildHorizontalLayout = (
+  chunk: string[],
+  style: KineticCaptionStyle,
+  seed: string,
+): GroupNode => {
+  return {
+    type: "group",
+    direction: "horizontal",
+    gap: 14,
+    alignItems: "center",
+    children: chunk.map((word, wordIndex) => ({
+      type: "word",
+      text: word,
+      style: getWordStyle(word, style, `${seed}:${wordIndex}`, false),
+    })),
+  };
+};
+
+const pickScenePosition = (
+  seed: string,
+  isVertical: boolean,
+): KineticScene["position"] => {
+  if (!isVertical) return "center";
+
+  const positions: KineticScene["position"][] = [
+    "top-left",
+    "top-right",
+    "center",
+    "bottom-left",
+    "bottom-right",
+  ];
+  return positions[hashString(seed) % positions.length];
+};
 
 const autoBuildScenes = (
   transcript: Segment[],
   fps: number,
+  style: KineticCaptionStyle,
 ): KineticScene[] => {
   const scenes: KineticScene[] = [];
 
@@ -480,65 +857,35 @@ const autoBuildScenes = (
     const segEnd = Math.ceil((seg.endMs / 1000) * fps);
     const segDur = segEnd - segStart;
 
-    // Chunk into groups of 2-3 words
-    const chunks: string[][] = [];
-    let i = 0;
-    while (i < words.length) {
-      const size = Math.min(
-        words.length - i,
-        2 + Math.floor(Math.random() * 2),
-      ); // 2 or 3
-      chunks.push(words.slice(i, i + size));
-      i += size;
-    }
+    const chunks = splitIntoKineticChunks(words, seg.id, style.maxWordsPerScene);
 
     const chunkDur = Math.max(10, Math.floor(segDur / chunks.length));
 
     chunks.forEach((chunk, idx) => {
       const start = segStart + idx * chunkDur;
-      // const end = Math.min(start + chunkDur + 8, segEnd); // +8 frames overlap
       const end = Math.min(start + chunkDur, segEnd);
-
-      const isVertical = Math.random() > 0.7;
-      // const positions = [
-      //   "top-left",
-      //   "top-right",
-      //   "bottom-left",
-      //   "bottom-right",
-      //   "center",
-      // ] as const;
-      const positions = ["center"] as const;
-
-      const position = isVertical
-        ? positions[Math.floor(Math.random() * positions.length)]
-        : "center";
-
-      const children: KineticNode[] = chunk.map((w) => {
-        const keys = Object.keys(
-          STYLE_PALETTE,
-        ) as (keyof typeof STYLE_PALETTE)[];
-        const pick = keys[Math.floor(Math.random() * keys.length)];
-        return {
-          type: "word",
-          text: w,
-          style: { ...STYLE_PALETTE[pick], color: "#fff" },
-        };
-      });
+      const seed = `${seg.id}:${idx}:${chunk.join(" ")}`;
+      const hasImportantWord = chunk.some(isBrandOrName);
+      const isVertical =
+        hasImportantWord || chance(`${seed}:vertical`, style.verticalFrequency);
+      const verticalChunk = [...chunk];
+      const position = pickScenePosition(`${seed}:position`, isVertical);
+      const entranceOptions: KineticScene["entranceFrom"][] = isVertical
+        ? ["top", "left", "right"]
+        : ["left", "right"];
+      const entranceFrom =
+        entranceOptions[hashString(`${seed}:entrance`) % entranceOptions.length];
 
       scenes.push({
         id: `${seg.id}_${idx}`,
         startFrame: start,
         endFrame: end,
         position,
-        wordStaggerFrames: 2,
-        layout: {
-          type: "group",
-          direction: isVertical ? "vertical" : "horizontal",
-          gap: isVertical ? 8 : 14,
-          // gap: isVertical ? 6 : 14,
-          alignItems: "center",
-          children,
-        },
+        wordStaggerFrames: isVertical ? 3 : 2,
+        entranceFrom,
+        layout: isVertical
+          ? buildVerticalLayout(verticalChunk, style, seed)
+          : buildHorizontalLayout(chunk, style, seed),
       });
     });
   });
@@ -549,15 +896,23 @@ const autoBuildScenes = (
 /* ─────────────────────────────────────────
    9. MAIN COMPONENT
    ───────────────────────────────────────── */
-export const CaptionComp: React.FC<CaptionCompProps> = ({ transcript }) => {
+export const CaptionComp: React.FC<CaptionCompProps> = ({
+  transcript,
+  stylePreset = "aesthetic",
+  captionStyle,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const resolvedStyle = useMemo(
+    () => resolveCaptionStyle(stylePreset, captionStyle),
+    [captionStyle, stylePreset],
+  );
 
   /* Toggle between hand-crafted example and auto-generator: */
   const scenes = useMemo(() => {
-    return autoBuildScenes(transcript, fps); // ← use this for automatic
+    return autoBuildScenes(transcript, fps, resolvedStyle); // ← use this for automatic
     // return EXAMPLE_SCENES;                       // ← hand-crafted example
-  }, [transcript, fps]);
+  }, [transcript, fps, resolvedStyle]);
 
   return (
     <AbsoluteFill>
