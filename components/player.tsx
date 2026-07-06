@@ -9,13 +9,12 @@ import { prefetch, staticFile } from "remotion";
 import { CaptionComp } from "./remotion/CaptionComp";
 // import { TextComp } from "./remotion/TextComp";
 
-
 const usePrefetchVideos = (srcs: string[]) => {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     Promise.all(
-      srcs.map((src) => prefetch(src, { method: "blob-url" }).waitUntilDone())
+      srcs.map((src) => prefetch(src, { method: "blob-url" }).waitUntilDone()),
     ).then(() => setReady(true));
   }, [srcs]);
 
@@ -100,19 +99,28 @@ export const PlayerComp = () => {
     }}
   /> */}
 
-        <Player
-    inputProps={{transcript}}
-    component={CaptionComp}
-    durationInFrames={totalFrames}
-    compositionWidth={1080}
-    compositionHeight={1920}
-    fps={24}
-    controls
-    style={{
-      width: "100%",
-      aspectRatio: "9 / 16",
-    }}
-  />
+      <Player
+        inputProps={{
+          transcript,
+          captionPosition: "center",
+          stylePreset: "punchy",
+          captionStyle: {
+            stylishFrequency: 0.16,
+            verticalFrequency: 0.42,
+            accentColor: "#fff36d",
+          },
+        }}
+        component={CaptionComp}
+        durationInFrames={totalFrames}
+        compositionWidth={1080}
+        compositionHeight={1920}
+        fps={24}
+        controls
+        style={{
+          width: "100%",
+          aspectRatio: "9 / 16",
+        }}
+      />
     </div>
   );
 };

@@ -73,17 +73,19 @@ type KineticNode = WordNode | GroupNode;
 type KineticScene = {
   id: string;
   layout: GroupNode; // root is always a group
-  position:
-    | "center"
-    | "top-left"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-right";
+  position: KineticCaptionPosition;
   startFrame: number;
   endFrame: number;
   wordStaggerFrames?: number; // frames between each word appearance
   entranceFrom?: "left" | "right" | "top" | "bottom";
 };
+
+export type KineticCaptionPosition =
+  | "center"
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
 
 export type KineticCaptionPreset =
   | "aesthetic"
@@ -111,6 +113,7 @@ type CaptionCompProps = {
   transcript: Segment[];
   stylePreset?: KineticCaptionPreset;
   captionStyle?: Partial<KineticCaptionStyle>;
+  captionPosition?: KineticCaptionPosition;
 };
 
 /* ─────────────────────────────────────────
@@ -828,26 +831,11 @@ const buildHorizontalLayout = (
   };
 };
 
-const pickScenePosition = (
-  seed: string,
-  isVertical: boolean,
-): KineticScene["position"] => {
-  if (!isVertical) return "center";
-
-  const positions: KineticScene["position"][] = [
-    "top-left",
-    "top-right",
-    "center",
-    "bottom-left",
-    "bottom-right",
-  ];
-  return positions[hashString(seed) % positions.length];
-};
-
 const autoBuildScenes = (
   transcript: Segment[],
   fps: number,
   style: KineticCaptionStyle,
+  captionPosition: KineticCaptionPosition,
 ): KineticScene[] => {
   const scenes: KineticScene[] = [];
 
@@ -869,7 +857,6 @@ const autoBuildScenes = (
       const isVertical =
         hasImportantWord || chance(`${seed}:vertical`, style.verticalFrequency);
       const verticalChunk = [...chunk];
-      const position = pickScenePosition(`${seed}:position`, isVertical);
       const entranceOptions: KineticScene["entranceFrom"][] = isVertical
         ? ["top", "left", "right"]
         : ["left", "right"];
@@ -880,7 +867,7 @@ const autoBuildScenes = (
         id: `${seg.id}_${idx}`,
         startFrame: start,
         endFrame: end,
-        position,
+        position: captionPosition,
         wordStaggerFrames: isVertical ? 3 : 2,
         entranceFrom,
         layout: isVertical
@@ -900,6 +887,7 @@ export const CaptionComp: React.FC<CaptionCompProps> = ({
   transcript,
   stylePreset = "aesthetic",
   captionStyle,
+  captionPosition = "center",
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -910,9 +898,9 @@ export const CaptionComp: React.FC<CaptionCompProps> = ({
 
   /* Toggle between hand-crafted example and auto-generator: */
   const scenes = useMemo(() => {
-    return autoBuildScenes(transcript, fps, resolvedStyle); // ← use this for automatic
+    return autoBuildScenes(transcript, fps, resolvedStyle, captionPosition); // ← use this for automatic
     // return EXAMPLE_SCENES;                       // ← hand-crafted example
-  }, [transcript, fps, resolvedStyle]);
+  }, [transcript, fps, resolvedStyle, captionPosition]);
 
   return (
     <AbsoluteFill>
