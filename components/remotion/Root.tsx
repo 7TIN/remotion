@@ -18,7 +18,7 @@ export const MyVideo = () => {
     <>
       {/* <Composition component={MyComp} durationInFrames={1042} width={1080} height={1920} fps={30} id="my-comp" defaultProps={{transcript}}/> */}
       {/* <Composition component={TextComp} id="my-text" width={1080} height={1920} fps={30} durationInFrames={142} /> */}
-    {/* <Composition
+      {/* <Composition
       id="VideoSeries"
       component={VideosInSequence}
       durationInFrames={834}
@@ -31,7 +31,7 @@ export const MyVideo = () => {
       }}
     /> */}
 
-        {/* <Composition
+      {/* <Composition
       id="myComp"
       component={MyComp}
       durationInFrames={834}
@@ -43,17 +43,24 @@ export const MyVideo = () => {
       }}
     /> */}
 
-            <Composition
-      id="caption"
-      component={CaptionComp}
-      durationInFrames={834}
-      fps={24000 / 1001}  // match your player: ~23.976
-      width={1080}        // match your player (you had 1920x1080 but player uses 1080x1920)
-      height={1920}
-      defaultProps={{ 
-         transcript
-      }}
-    />
+      <Composition
+        id="caption"
+        component={CaptionComp}
+        durationInFrames={834}
+        fps={24000 / 1001} // match your player: ~23.976
+        width={1080} // match your player (you had 1920x1080 but player uses 1080x1920)
+        height={1920}
+        defaultProps={{
+          transcript,
+          captionPosition: "center",
+          stylePreset: "aesthetic",
+          captionStyle: {
+            stylishFrequency: 0.16,
+            verticalFrequency: 0.42,
+            accentColor: "#fff36d",
+          },
+        }}
+      />
     </>
   );
 };

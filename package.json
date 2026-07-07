@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "render-server": "bun scripts/render-server.mjs",
+    "transcript:generate": "bun scripts/generate-caption-transcript.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

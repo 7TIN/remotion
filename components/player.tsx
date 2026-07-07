@@ -103,7 +103,7 @@ export const PlayerComp = () => {
         inputProps={{
           transcript,
           captionPosition: "center",
-          stylePreset: "punchy",
+          stylePreset: "aesthetic",
           captionStyle: {
             stylishFrequency: 0.16,
             verticalFrequency: 0.42,

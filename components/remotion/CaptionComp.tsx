@@ -674,7 +674,7 @@ const getWordStyle = (
   if (forceBold) {
     return {
       fontFamily: style.boldFont,
-      fontSize: 104,
+      fontSize: 132,
       fontWeight: 900,
       color: style.accentColor,
       letterSpacing: "0",
@@ -686,7 +686,7 @@ const getWordStyle = (
   if (useStylish) {
     return {
       fontFamily: style.emotionFont,
-      fontSize: 72,
+      fontSize: 86,
       fontWeight: 500,
       fontStyle: "italic",
       color: style.mutedColor,
@@ -697,7 +697,7 @@ const getWordStyle = (
   if (useFormal) {
     return {
       fontFamily: style.formalFont,
-      fontSize: 56,
+      fontSize: 64,
       fontWeight: isConnector ? 400 : 700,
       fontStyle: cleaned === "i" ? "italic" : "normal",
       color: style.mutedColor,
@@ -709,7 +709,7 @@ const getWordStyle = (
     fontFamily: chance(`${seed}:secondary`, 0.28)
       ? style.secondaryFont
       : style.primaryFont,
-    fontSize: 62,
+    fontSize: 72,
     fontWeight: 800,
     color: style.color,
     letterSpacing: "0",
