@@ -1,12 +1,11 @@
 // "use server"
 "use client";
 import { Player } from "@remotion/player";
-import { ALL_VIDEO_SRCS, MyComp } from "./remotion/MyComp";
+import { ALL_VIDEO_SRCS } from "./remotion/MyComp";
 import { transcript } from "@/data/transcript";
-import { backVideo, videos, VideosInSequence } from "./remotion/VidSeries";
-import { useEffect, useMemo, useState } from "react";
-import { prefetch, staticFile } from "remotion";
-import { CaptionComp } from "./remotion/CaptionComp";
+import { useEffect, useState } from "react";
+import { prefetch } from "remotion";
+import { CaptionComp, type CaptionInputProps } from "./remotion/CaptionComp";
 // import { TextComp } from "./remotion/TextComp";
 
 const usePrefetchVideos = (srcs: string[]) => {
@@ -26,7 +25,11 @@ const usePrefetchVideos = (srcs: string[]) => {
 //   ...backVideo.map((v) => staticFile(v.src)),
 // ];
 
-export const PlayerComp = () => {
+type PlayerCompProps = {
+  captionInputProps?: CaptionInputProps;
+};
+
+export const PlayerComp = ({ captionInputProps }: PlayerCompProps) => {
   // const inputProps = useMemo(() => {
   //   return {
   //     videos: videos,
@@ -104,6 +107,7 @@ export const PlayerComp = () => {
           transcript,
           captionPosition: "center",
           stylePreset: "aesthetic",
+          ...captionInputProps,
         }}
         component={CaptionComp}
         durationInFrames={totalFrames}

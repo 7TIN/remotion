@@ -116,12 +116,15 @@ export type KineticCaptionStyle = {
   maxWordsPerScene: 2 | 3 | 4;
 };
 
-type CaptionCompProps = {
+export type CaptionCompProps = {
   transcript: Segment[];
   stylePreset?: KineticCaptionPreset;
   captionStyle?: Partial<KineticCaptionStyle>;
   captionPosition?: KineticCaptionPosition;
+  specialFontColor?: string;
 };
+
+export type CaptionInputProps = Omit<CaptionCompProps, "transcript">;
 
 /* ─────────────────────────────────────────
    3. DEFAULT READABILITY STYLES
@@ -652,15 +655,78 @@ const BRAND_WORDS = new Set([
   "youtube",
 ]);
 
+const TAILWIND_COLORS: Record<string, string> = {
+  "slate-100": "#f1f5f9",
+  "slate-200": "#e2e8f0",
+  "slate-300": "#cbd5e1",
+  "gray-100": "#f3f4f6",
+  "gray-200": "#e5e7eb",
+  "gray-300": "#d1d5db",
+  "red-300": "#fca5a5",
+  "red-400": "#f87171",
+  "red-500": "#ef4444",
+  "orange-300": "#fdba74",
+  "orange-400": "#fb923c",
+  "orange-500": "#f97316",
+  "amber-200": "#fde68a",
+  "amber-300": "#fcd34d",
+  "amber-400": "#fbbf24",
+  "yellow-200": "#fef08a",
+  "yellow-300": "#fde047",
+  "yellow-400": "#facc15",
+  "lime-300": "#bef264",
+  "lime-400": "#a3e635",
+  "green-300": "#86efac",
+  "green-400": "#4ade80",
+  "emerald-300": "#6ee7b7",
+  "emerald-400": "#34d399",
+  "teal-300": "#5eead4",
+  "teal-400": "#2dd4bf",
+  "cyan-200": "#a5f3fc",
+  "cyan-300": "#67e8f9",
+  "cyan-400": "#22d3ee",
+  "sky-300": "#7dd3fc",
+  "sky-400": "#38bdf8",
+  "blue-300": "#93c5fd",
+  "blue-400": "#60a5fa",
+  "indigo-300": "#a5b4fc",
+  "indigo-400": "#818cf8",
+  "violet-300": "#c4b5fd",
+  "violet-400": "#a78bfa",
+  "purple-300": "#d8b4fe",
+  "purple-400": "#c084fc",
+  "fuchsia-300": "#f0abfc",
+  "fuchsia-400": "#e879f9",
+  "pink-300": "#f9a8d4",
+  "pink-400": "#f472b6",
+  "rose-300": "#fda4af",
+  "rose-400": "#fb7185",
+  white: "#ffffff",
+  black: "#000000",
+};
+
+const resolveTailwindColor = (color: string | undefined) => {
+  if (!color) return undefined;
+
+  const normalized = color.trim().replace(/^text-/, "").toLowerCase();
+  return TAILWIND_COLORS[normalized] ?? color;
+};
+
 const resolveCaptionStyle = (
   stylePreset: KineticCaptionPreset = "aesthetic",
   captionStyle?: Partial<KineticCaptionStyle>,
+  specialFontColor?: string,
 ): KineticCaptionStyle => {
   const requestedPreset = captionStyle?.preset ?? stylePreset;
   const base = PRESET_STYLES[requestedPreset] ?? PRESET_STYLES.aesthetic;
+  const resolvedSpecialFontColor = resolveTailwindColor(specialFontColor);
+
   return {
     ...base,
     ...captionStyle,
+    ...(resolvedSpecialFontColor
+      ? { accentColor: resolvedSpecialFontColor }
+      : {}),
     preset: requestedPreset,
   };
 };
@@ -924,15 +990,16 @@ const autoBuildScenes = (
    ───────────────────────────────────────── */
 export const CaptionComp: React.FC<CaptionCompProps> = ({
   transcript,
-  stylePreset = "punchy",
+  stylePreset = "aesthetic",
   captionStyle,
   captionPosition = "center",
+  specialFontColor,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const resolvedStyle = useMemo(
-    () => resolveCaptionStyle(stylePreset, captionStyle),
-    [captionStyle, stylePreset],
+    () => resolveCaptionStyle(stylePreset, captionStyle, specialFontColor),
+    [captionStyle, specialFontColor, stylePreset],
   );
 
   /* Toggle between hand-crafted example and auto-generator: */
