@@ -7,7 +7,14 @@ import type {
   KineticCaptionPreset,
   KineticCaptionStyle,
 } from "./remotion/CaptionComp";
-import { Check, Palette, Play, RotateCcw, SlidersHorizontal } from "lucide-react";
+import {
+  Check,
+  Clipboard,
+  Palette,
+  Play,
+  RotateCcw,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 type CaptionDraft = {
@@ -131,6 +138,30 @@ const draftToInputProps = (draft: CaptionDraft): CaptionInputProps => ({
   } satisfies Partial<KineticCaptionStyle>,
 });
 
+const draftToDefaultPropsSnippet = (draft: CaptionDraft) => {
+  return `defaultProps={{
+  transcript,
+  captionPosition: ${JSON.stringify(draft.captionPosition)},
+  stylePreset: ${JSON.stringify(draft.stylePreset)},
+  specialFontColor: ${JSON.stringify(draft.specialFontColor)},
+  captionStyle: {
+    color: ${JSON.stringify(draft.normalColor)},
+    mutedColor: ${JSON.stringify(draft.mutedColor)},
+    stylishFrequency: ${draft.stylishFrequency},
+    verticalFrequency: ${draft.verticalFrequency},
+    boldFrequency: ${draft.boldFrequency},
+    maxWordsPerScene: ${draft.maxWordsPerScene},
+    normalFontSize: ${draft.normalFontSize},
+    stylishFontSize: ${draft.stylishFontSize},
+    formalFontSize: ${draft.formalFontSize},
+    boldFontSize: ${draft.boldFontSize},
+    normalFontWeight: ${draft.normalFontWeight},
+    formalFontWeight: ${draft.formalFontWeight},
+    boldFontWeight: ${draft.boldFontWeight},
+  },
+}}`;
+};
+
 const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
 
 export const PlayerShow = () => {
@@ -141,6 +172,7 @@ export const PlayerShow = () => {
   const [draft, setDraft] = useState<CaptionDraft>(DEFAULT_DRAFT);
   const [appliedDraft, setAppliedDraft] = useState<CaptionDraft>(DEFAULT_DRAFT);
   const [previewVersion, setPreviewVersion] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const appliedInputProps = useMemo(
     () => draftToInputProps(appliedDraft),
@@ -167,6 +199,13 @@ export const PlayerShow = () => {
     setDraft(DEFAULT_DRAFT);
     setAppliedDraft(DEFAULT_DRAFT);
     setPreviewVersion((version) => version + 1);
+    setCopied(false);
+  };
+
+  const copyDefaultProps = async () => {
+    await navigator.clipboard.writeText(draftToDefaultPropsSnippet(draft));
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
   };
 
   return (
@@ -195,6 +234,14 @@ export const PlayerShow = () => {
               aria-label="Reset caption inputs"
             >
               <RotateCcw size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={copyDefaultProps}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-200 px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            >
+              {copied ? <Check size={16} /> : <Clipboard size={16} />}
+              {copied ? "Copied" : "Copy"}
             </button>
             <button
               type="button"

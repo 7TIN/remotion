@@ -52,12 +52,23 @@ export const MyVideo = () => {
         height={1920}
         defaultProps={{
           transcript,
-          captionPosition: "center",
-          stylePreset: "aesthetic",
+          captionPosition: "top-left",
+          stylePreset: "editorial",
+          specialFontColor: "amber-300",
           captionStyle: {
-            stylishFrequency: 0.16,
-            verticalFrequency: 0.42,
-            accentColor: "#fff36d",
+            color: "#ffffff",
+            mutedColor: "#f5f5f5",
+            stylishFrequency: 0.3,
+            verticalFrequency: 0.63,
+            boldFrequency: 0.1,
+            maxWordsPerScene: 3,
+            normalFontSize: 80,
+            stylishFontSize: 88,
+            formalFontSize: 67,
+            boldFontSize: 131,
+            normalFontWeight: 660,
+            formalFontWeight: 520,
+            boldFontWeight: 900,
           },
         }}
       />
