@@ -104,11 +104,6 @@ export const PlayerComp = () => {
           transcript,
           captionPosition: "center",
           stylePreset: "aesthetic",
-          captionStyle: {
-            stylishFrequency: 0.16,
-            verticalFrequency: 0.42,
-            accentColor: "#fff36d",
-          },
         }}
         component={CaptionComp}
         durationInFrames={totalFrames}

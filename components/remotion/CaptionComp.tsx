@@ -103,6 +103,13 @@ export type KineticCaptionStyle = {
   color: string;
   mutedColor: string;
   accentColor: string;
+  normalFontSize: number;
+  stylishFontSize: number;
+  formalFontSize: number;
+  boldFontSize: number;
+  normalFontWeight: number;
+  formalFontWeight: number;
+  boldFontWeight: number;
   stylishFrequency: number;
   verticalFrequency: number;
   boldFrequency: number;
@@ -493,7 +500,14 @@ const PRESET_STYLES: Record<KineticCaptionPreset, KineticCaptionStyle> = {
     boldFont: FONT_STACKS.impact,
     color: "#ffffff",
     mutedColor: "#f1efe9",
-    accentColor: "#fff36d",
+    accentColor: "#f1efe9",
+    normalFontSize: 72,
+    stylishFontSize: 88,
+    formalFontSize: 64,
+    boldFontSize: 118,
+    normalFontWeight: 760,
+    formalFontWeight: 430,
+    boldFontWeight: 900,
     stylishFrequency: 0.22,
     verticalFrequency: 0.34,
     boldFrequency: 0.18,
@@ -507,8 +521,15 @@ const PRESET_STYLES: Record<KineticCaptionPreset, KineticCaptionStyle> = {
     formalFont: fontFormal,
     boldFont: fontOswald,
     color: "#ffffff",
-    mutedColor: "#ececec",
-    accentColor: "#d9ff66",
+    mutedColor: "#e7ded1",
+    accentColor: "#b8f7ff",
+    normalFontSize: 68,
+    stylishFontSize: 78,
+    formalFontSize: 70,
+    boldFontSize: 108,
+    normalFontWeight: 650,
+    formalFontWeight: 700,
+    boldFontWeight: 800,
     stylishFrequency: 0.16,
     verticalFrequency: 0.28,
     boldFrequency: 0.12,
@@ -524,6 +545,13 @@ const PRESET_STYLES: Record<KineticCaptionPreset, KineticCaptionStyle> = {
     color: "#ffffff",
     mutedColor: "#f7f7f7",
     accentColor: "#ffef5c",
+    normalFontSize: 76,
+    stylishFontSize: 94,
+    formalFontSize: 62,
+    boldFontSize: 132,
+    normalFontWeight: 900,
+    formalFontWeight: 500,
+    boldFontWeight: 900,
     stylishFrequency: 0.18,
     verticalFrequency: 0.45,
     boldFrequency: 0.3,
@@ -537,8 +565,15 @@ const PRESET_STYLES: Record<KineticCaptionPreset, KineticCaptionStyle> = {
     formalFont: fontFormal,
     boldFont: fontOswald,
     color: "#ffffff",
-    mutedColor: "#eeeeee",
+    mutedColor: "#d8d8d8",
     accentColor: "#ffffff",
+    normalFontSize: 62,
+    stylishFontSize: 68,
+    formalFontSize: 58,
+    boldFontSize: 92,
+    normalFontWeight: 600,
+    formalFontWeight: 400,
+    boldFontWeight: 700,
     stylishFrequency: 0.08,
     verticalFrequency: 0.22,
     boldFrequency: 0.08,
@@ -674,8 +709,8 @@ const getWordStyle = (
   if (forceBold) {
     return {
       fontFamily: style.boldFont,
-      fontSize: 132,
-      fontWeight: 900,
+      fontSize: style.boldFontSize,
+      fontWeight: style.boldFontWeight,
       color: style.accentColor,
       letterSpacing: "0",
       textTransform: "uppercase",
@@ -686,7 +721,7 @@ const getWordStyle = (
   if (useStylish) {
     return {
       fontFamily: style.emotionFont,
-      fontSize: 86,
+      fontSize: style.stylishFontSize,
       fontWeight: 500,
       fontStyle: "italic",
       color: style.mutedColor,
@@ -697,8 +732,8 @@ const getWordStyle = (
   if (useFormal) {
     return {
       fontFamily: style.formalFont,
-      fontSize: 64,
-      fontWeight: isConnector ? 400 : 700,
+      fontSize: style.formalFontSize,
+      fontWeight: isConnector ? style.formalFontWeight : 700,
       fontStyle: cleaned === "i" ? "italic" : "normal",
       color: style.mutedColor,
       letterSpacing: "0",
@@ -709,8 +744,8 @@ const getWordStyle = (
     fontFamily: chance(`${seed}:secondary`, 0.28)
       ? style.secondaryFont
       : style.primaryFont,
-    fontSize: 72,
-    fontWeight: 800,
+    fontSize: style.normalFontSize,
+    fontWeight: style.normalFontWeight,
     color: style.color,
     letterSpacing: "0",
   };
@@ -845,14 +880,18 @@ const autoBuildScenes = (
     const segEnd = Math.ceil((seg.endMs / 1000) * fps);
     const segDur = segEnd - segStart;
 
-    const chunks = splitIntoKineticChunks(words, seg.id, style.maxWordsPerScene);
+    const chunks = splitIntoKineticChunks(
+      words,
+      `${style.preset}:${seg.id}`,
+      style.maxWordsPerScene,
+    );
 
     const chunkDur = Math.max(10, Math.floor(segDur / chunks.length));
 
     chunks.forEach((chunk, idx) => {
       const start = segStart + idx * chunkDur;
       const end = Math.min(start + chunkDur, segEnd);
-      const seed = `${seg.id}:${idx}:${chunk.join(" ")}`;
+      const seed = `${style.preset}:${seg.id}:${idx}:${chunk.join(" ")}`;
       const hasImportantWord = chunk.some(isBrandOrName);
       const isVertical =
         hasImportantWord || chance(`${seed}:vertical`, style.verticalFrequency);
@@ -885,7 +924,7 @@ const autoBuildScenes = (
    ───────────────────────────────────────── */
 export const CaptionComp: React.FC<CaptionCompProps> = ({
   transcript,
-  stylePreset = "aesthetic",
+  stylePreset = "punchy",
   captionStyle,
   captionPosition = "center",
 }) => {
