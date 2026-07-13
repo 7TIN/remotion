@@ -48,15 +48,47 @@ const POSITIONS: KineticCaptionPosition[] = [
   "bottom-right",
 ];
 
-const COLOR_OPTIONS = [
+type ColorOption = {
+  label: string;
+  value: string;
+  hex: string;
+};
+
+const SPECIAL_COLOR_OPTIONS: ColorOption[] = [
   { label: "Yellow", value: "yellow-300", hex: "#fde047" },
+  { label: "Amber", value: "amber-300", hex: "#fcd34d" },
   { label: "Emerald", value: "emerald-300", hex: "#6ee7b7" },
+  { label: "Teal", value: "teal-300", hex: "#5eead4" },
   { label: "Cyan", value: "cyan-300", hex: "#67e8f9" },
   { label: "Sky", value: "sky-300", hex: "#7dd3fc" },
-  { label: "Violet", value: "violet-300", hex: "#c4b5fd" },
   { label: "Rose", value: "rose-400", hex: "#fb7185" },
-  { label: "Amber", value: "amber-300", hex: "#fcd34d" },
   { label: "White", value: "white", hex: "#ffffff" },
+];
+
+const TEXT_COLOR_OPTIONS: ColorOption[] = [
+  { label: "White", value: "white", hex: "#ffffff" },
+  { label: "Black", value: "black", hex: "#000000" },
+  { label: "Zinc 100", value: "zinc-100", hex: "#f4f4f5" },
+  { label: "Zinc 200", value: "zinc-200", hex: "#e4e4e7" },
+  { label: "Zinc 300", value: "zinc-300", hex: "#d4d4d8" },
+  { label: "Zinc 400", value: "zinc-400", hex: "#a1a1aa" },
+  { label: "Slate 100", value: "slate-100", hex: "#f1f5f9" },
+  { label: "Slate 200", value: "slate-200", hex: "#e2e8f0" },
+  { label: "Slate 300", value: "slate-300", hex: "#cbd5e1" },
+  { label: "Slate 400", value: "slate-400", hex: "#94a3b8" },
+  { label: "Gray 100", value: "gray-100", hex: "#f3f4f6" },
+  { label: "Gray 200", value: "gray-200", hex: "#e5e7eb" },
+  { label: "Stone 100", value: "stone-100", hex: "#f5f5f4" },
+  { label: "Stone 200", value: "stone-200", hex: "#e7e5e4" },
+  { label: "Stone 300", value: "stone-300", hex: "#d6d3d1" },
+  { label: "Neutral 100", value: "neutral-100", hex: "#f5f5f5" },
+  { label: "Neutral 200", value: "neutral-200", hex: "#e5e5e5" },
+  { label: "Sky 100", value: "sky-100", hex: "#e0f2fe" },
+  { label: "Blue 100", value: "blue-100", hex: "#dbeafe" },
+  { label: "Teal 100", value: "teal-100", hex: "#ccfbf1" },
+  { label: "Emerald 100", value: "emerald-100", hex: "#d1fae5" },
+  { label: "Rose 100", value: "rose-100", hex: "#ffe4e6" },
+  { label: "Amber 100", value: "amber-100", hex: "#fef3c7" },
 ];
 
 const DEFAULT_DRAFT: CaptionDraft = {
@@ -64,7 +96,7 @@ const DEFAULT_DRAFT: CaptionDraft = {
   captionPosition: "center",
   specialFontColor: "yellow-300",
   normalColor: "#ffffff",
-  mutedColor: "#f1efe9",
+  mutedColor: "#e4e4e7",
   stylishFrequency: 0.22,
   verticalFrequency: 0.34,
   boldFrequency: 0.18,
@@ -196,17 +228,20 @@ export const PlayerShow = () => {
             <ColorPicker
               label="Special color"
               value={draft.specialFontColor}
+              options={SPECIAL_COLOR_OPTIONS}
               onChange={(value) => updateDraft("specialFontColor", value)}
             />
             <ColorPicker
               label="Normal color"
               value={draft.normalColor}
+              options={TEXT_COLOR_OPTIONS}
               outputHex
               onChange={(value) => updateDraft("normalColor", value)}
             />
             <ColorPicker
               label="Soft color"
               value={draft.mutedColor}
+              options={TEXT_COLOR_OPTIONS}
               outputHex
               onChange={(value) => updateDraft("mutedColor", value)}
             />
@@ -376,11 +411,13 @@ const SelectControl = ({
 const ColorPicker = ({
   label,
   onChange,
+  options,
   outputHex = false,
   value,
 }: {
   label: string;
   onChange: (value: string) => void;
+  options: ColorOption[];
   outputHex?: boolean;
   value: string;
 }) => {
@@ -391,9 +428,13 @@ const ColorPicker = ({
         <span className="font-mono text-[11px] text-zinc-500">{value}</span>
       </div>
       <div className="grid grid-cols-8 gap-2">
-        {COLOR_OPTIONS.map((color) => {
+        {options.map((color) => {
           const nextValue = outputHex ? color.hex : color.value;
           const selected = value === nextValue;
+          const checkColor =
+            color.hex.toLowerCase() === "#000000"
+              ? "text-white"
+              : "text-zinc-950";
 
           return (
             <button
@@ -405,7 +446,9 @@ const ColorPicker = ({
               aria-label={`${label}: ${color.label}`}
             >
               {selected ? (
-                <span className="absolute inset-0 flex items-center justify-center text-zinc-950">
+                <span
+                  className={`absolute inset-0 flex items-center justify-center ${checkColor}`}
+                >
                   <Check size={15} strokeWidth={3} />
                 </span>
               ) : null}
