@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:webpack": "next dev --webpack",
     "render-server": "bun scripts/render-server.mjs",
     "transcript:generate": "bun scripts/generate-caption-transcript.ts",
     "build": "next build",
