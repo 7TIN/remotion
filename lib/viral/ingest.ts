@@ -137,6 +137,7 @@ export async function downloadAudioForTranscription({
       inputUrl,
     ],
     videoDir,
+    { retries: 3, retryDelayMs: 1500 },
   );
 
   const files = await readdir(videoDir);
@@ -180,6 +181,7 @@ async function downloadSubtitleKind({
         inputUrl,
       ],
       videoDir,
+      { retries: 3, retryDelayMs: 1500 },
     );
 
     const files = await readdir(videoDir);
@@ -212,20 +214,54 @@ async function downloadSubtitleKind({
   }
 }
 
-async function execYtDlp(args: string[], cwd: string) {
-  try {
-    await execFileAsync("yt-dlp", args, {
-      cwd,
-      timeout: 180_000,
-      windowsHide: true,
-      maxBuffer: 1024 * 1024 * 12,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `yt-dlp failed. Make sure yt-dlp is installed and available on PATH. ${message}`,
-    );
+async function execYtDlp(
+  args: string[],
+  cwd: string,
+  options: { retries?: number; retryDelayMs?: number } = {},
+) {
+  const maxRetries = options.retries ?? 1;
+  const retryDelayMs = options.retryDelayMs ?? 1000;
+  let attempt = 0;
+
+  while (true) {
+    try {
+      await execFileAsync("yt-dlp", args, {
+        cwd,
+        timeout: 180_000,
+        windowsHide: true,
+        maxBuffer: 1024 * 1024 * 12,
+      });
+      return;
+    } catch (error) {
+      attempt += 1;
+      const message = error instanceof Error ? error.message : String(error);
+      const isRetryable = isYtDlpRateLimitError(message);
+
+      if (attempt < maxRetries && isRetryable) {
+        const delayMs = retryDelayMs * attempt;
+        console.warn(
+          `yt-dlp retry ${attempt}/${maxRetries} due to rate limit or 403/429: ${message}`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+
+      throw new Error(
+        `yt-dlp failed. Make sure yt-dlp is installed and available on PATH. ${message}`,
+      );
+    }
   }
+}
+
+function isYtDlpRateLimitError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    /http error\s*429/.test(normalized) ||
+    /http error\s*403/.test(normalized) ||
+    /too many requests/.test(normalized) ||
+    /429/.test(normalized) ||
+    /403/.test(normalized)
+  );
 }
 
 function sanitizeId(value: string) {

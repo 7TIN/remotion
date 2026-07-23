@@ -97,6 +97,9 @@ export type ViralGenerationResult = {
   segmentsPath: string;
   selectedPhrasesPath: string;
   clipsPath: string;
+  clipDirectory: string;
+  clipSources: string[];
+  clipDurations: number[];
   captionTranscript: CaptionTranscriptSegment[];
   aiSelections: AiPhraseSelection[];
   selectedPhrases: PhraseScore[];

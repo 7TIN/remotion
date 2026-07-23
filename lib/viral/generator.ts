@@ -23,6 +23,7 @@ import {
 } from "./storage";
 import { buildTimeline } from "./timeline";
 import { transcribeWithProviderQueue } from "./transcription";
+import { downloadClipsForVideo } from "./download-clips";
 import type {
   AiPhraseSelection,
   PhraseScore,
@@ -133,6 +134,19 @@ export async function generateViralClipPlan(
   await saveJsonFile(selectedPhrasesPath, aiSelections);
   await saveJsonFile(clipsPath, selectedPhrases);
 
+  const clipDirectory = `/clips/${videoId}`;
+  const clipMetadata = await downloadClipsForVideo({
+    inputUrl: options.inputUrl,
+    videoId,
+    selectedPhrases,
+    maxConcurrency: 3,
+    retries: 3,
+    retryDelayMs: 1500,
+    logs,
+  });
+  const clipSources = clipMetadata.map((clip) => clip.src);
+  const clipDurations = clipMetadata.map((clip) => clip.duration);
+
   const captionTranscript = buildCaptionTranscript(transcription);
   const timeline = buildTimeline(selectedPhrases, options.targetDuration);
 
@@ -148,6 +162,9 @@ export async function generateViralClipPlan(
     segmentsPath,
     selectedPhrasesPath,
     clipsPath,
+    clipDirectory,
+    clipSources,
+    clipDurations,
     transcription,
     captionTranscript,
     aiSelections,

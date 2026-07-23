@@ -22,6 +22,11 @@ interface ClipData {
   [key: string]: unknown;
 }
 
+export interface VideoSeriesCompProps {
+  clipSources?: string[];
+  clipDurations?: number[];
+}
+
 import type {TransitionPresentation} from "@remotion/transitions";
 
 type AnyTransitionPresentation = TransitionPresentation<Record<string, unknown>>;
@@ -50,8 +55,9 @@ function getTransition(index: number): AnyTransitionPresentation {
 
 // ── Config ─────────────────────────────────────────────
 export const COMP_FPS = 24;
-export const COMP_WIDTH = 1080;
-export const COMP_HEIGHT = 1920;
+export const COMP_WIDTH = 1920;
+export const COMP_HEIGHT = 1080;
+
 const TRANSITION_FRAMES = 6; // 0.25s quick cuts
 
 // ── Build clip list from JSON timestamps ───────────────
@@ -61,27 +67,55 @@ const clips: ClipData[] = (clipsJson as ClipData[]).filter(
 
 // const pwd = process.cwd()
 
-const CLIPS = clips.map((clip, i) => ({
+const DEFAULT_CLIPS = clips.map((clip, i) => ({
   id: i + 1,
- src: staticFile(`clips/${i + 1}.mp4`),
+  src: staticFile(`clips/${i + 1}.mp4`),
   durationInFrames: Math.ceil((clip.end - clip.start) * COMP_FPS),
 }));
 
+function clampDuration(duration: number) {
+  return Math.max(1, Math.round(duration * COMP_FPS));
+}
+
 // ── Total composition duration ─────────────────────────
 // Transitions overlap adjacent clips, so subtract their durations
-export const TOTAL_FRAMES = CLIPS.reduce(
+export const TOTAL_FRAMES = DEFAULT_CLIPS.reduce(
   (sum, c) => sum + c.durationInFrames,
-  0
-) - Math.max(0, CLIPS.length - 1) * TRANSITION_FRAMES;
+  0,
+) - Math.max(0, DEFAULT_CLIPS.length - 1) * TRANSITION_FRAMES;
+
+export function computeTotalFrames(clipDurations?: number[]) {
+  const durations = clipDurations?.length
+    ? clipDurations.map(clampDuration)
+    : DEFAULT_CLIPS.map((clip) => clip.durationInFrames);
+
+  return (
+    durations.reduce((sum, duration) => sum + duration, 0) -
+    Math.max(0, durations.length - 1) * TRANSITION_FRAMES
+  );
+}
 
 // ── Thrilling transition presets (cycles through) ──────
 
 // ── Component ──────────────────────────────────────────
-export const VideoSeriesComp: React.FC = () => {
+export const VideoSeriesComp: React.FC<VideoSeriesCompProps> = ({
+  clipSources,
+  clipDurations,
+}) => {
+  const clipsToRender = clipSources?.length
+    ? clipSources.map((src, index) => ({
+        id: index + 1,
+        src,
+        durationInFrames: clipDurations
+          ? clampDuration(clipDurations[index] ?? COMP_FPS * 3)
+          : COMP_FPS * 3,
+      }))
+    : DEFAULT_CLIPS;
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
       <TransitionSeries>
-        {CLIPS.map((clip, i) => (
+        {clipsToRender.map((clip, i) => (
           <React.Fragment key={clip.id}>
             <TransitionSeries.Sequence
               durationInFrames={clip.durationInFrames}
@@ -100,7 +134,7 @@ export const VideoSeriesComp: React.FC = () => {
               </AbsoluteFill>
             </TransitionSeries.Sequence>
 
-            {i < CLIPS.length - 1 && (
+            {i < clipsToRender.length - 1 && (
               <TransitionSeries.Transition
                 timing={linearTiming({ durationInFrames: TRANSITION_FRAMES })}
                 presentation={getTransition(i)}

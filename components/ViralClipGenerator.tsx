@@ -8,7 +8,15 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
+import { Player } from "@remotion/player";
 import { useEffect, useRef, useState } from "react";
+import {
+  COMP_FPS,
+  COMP_HEIGHT,
+  COMP_WIDTH,
+  VideoSeriesComp,
+  computeTotalFrames,
+} from "@/components/remotion/trailerComp";
 
 type FormState = {
   inputUrl: string;
@@ -65,7 +73,7 @@ export const ViralClipGenerator = () => {
 
   const pollJob = (jobId: string) => {
     stopPolling();
-
+c
     pollRef.current = window.setInterval(async () => {
       try {
         const response = await fetch(`/api/viral/status?jobId=${jobId}`);
@@ -144,7 +152,7 @@ export const ViralClipGenerator = () => {
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-6 text-zinc-950 dark:bg-black dark:text-zinc-50">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 lg:flex-row lg:items-start">
-        <section className="w-full rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 lg:w-[390px] lg:shrink-0">
+        <section className="w-full rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 lg:w-97.5 lg:shrink-0">
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
               <Sparkles size={18} />
@@ -289,6 +297,7 @@ export const ViralClipGenerator = () => {
                   <Metric label="Text transcript" value={result.textTranscriptPath} />
                   <Metric label="Segments" value={result.segmentsPath} />
                   <Metric label="Clips JSON" value={result.clipsPath} />
+                  <Metric label="Clip directory" value={result.clipDirectory} />
                   <Metric
                     label="Segments count"
                     value={String(result.transcription.segments.length)}
@@ -345,6 +354,26 @@ export const ViralClipGenerator = () => {
                   ))}
                 </div>
               </ResultSection>
+
+              {result.clipSources?.length ? (
+                <ResultSection title="Preview clips">
+                  <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                    <Player
+                      component={VideoSeriesComp}
+                      inputProps={{
+                        clipSources: result.clipSources,
+                        clipDurations: result.clipDurations,
+                      }}
+                      durationInFrames={computeTotalFrames(result.clipDurations)}
+                      compositionWidth={COMP_WIDTH}
+                      compositionHeight={COMP_HEIGHT}
+                      fps={COMP_FPS}
+                      controls
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                </ResultSection>
+              ) : null}
 
               <ResultSection title="Pipeline logs">
                 <div className="flex flex-col gap-2">
