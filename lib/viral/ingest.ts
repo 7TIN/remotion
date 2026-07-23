@@ -3,10 +3,10 @@ import { mkdir, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { parseSubtitleToTranscription } from "./normalize";
+import { parseYoutubeVtt } from "./youtube-vtt-parser";
 import type { UnifiedTranscription, ViralGenerationLog } from "./types";
 
 const execFileAsync = promisify(execFile);
-const DEFAULT_SUB_LANGS = "en,en-US,en-IN,hi";
 
 export function getVideoId(inputUrl: string) {
   try {
@@ -46,10 +46,12 @@ export async function tryYoutubeCaptions({
   });
 
   if (manual) {
-    return parseSubtitleToTranscription(
+    return transcriptionFromSubtitleFile(
       manual.contents,
+      manual.filePath,
       "ytdlp-manual",
       language,
+      logs,
     );
   }
 
@@ -63,10 +65,52 @@ export async function tryYoutubeCaptions({
   });
 
   if (auto) {
-    return parseSubtitleToTranscription(auto.contents, "ytdlp-auto", language);
+    return transcriptionFromSubtitleFile(
+      auto.contents,
+      auto.filePath,
+      "ytdlp-auto",
+      language,
+      logs,
+    );
   }
 
   return undefined;
+}
+
+function transcriptionFromSubtitleFile(
+  contents: string,
+  filePath: string,
+  source: Extract<UnifiedTranscription["source"], "ytdlp-manual" | "ytdlp-auto">,
+  language: string,
+  logs: ViralGenerationLog[],
+): UnifiedTranscription {
+  const isVtt = filePath.endsWith(".vtt") || contents.trim().startsWith("WEBVTT");
+
+  if (source === "ytdlp-auto" && isVtt) {
+    const parsed = parseYoutubeVtt(contents);
+    if (parsed.segments.length > 0) {
+      logs.push({
+        stage: "captions",
+        status: "success",
+        message: `Parsed ${parsed.segments.length} word-level VTT segments.`,
+      });
+
+      return {
+        source,
+        language,
+        fullText: parsed.transcript.replace(/\n/g, " "),
+        segments: parsed.segments.map((segment, index) => ({
+          id: index + 1,
+          text: segment.text,
+          start: segment.start,
+          end: segment.end,
+        })),
+        duration: parsed.segments.at(-1)?.end || 0,
+      };
+    }
+  }
+
+  return parseSubtitleToTranscription(contents, source, language);
 }
 
 export async function downloadAudioForTranscription({
@@ -129,9 +173,7 @@ async function downloadSubtitleKind({
       [
         kind === "manual" ? "--write-subs" : "--write-auto-subs",
         "--sub-langs",
-        language === "auto" ? "all" : language || DEFAULT_SUB_LANGS,
-        "--convert-subs",
-        "srt",
+        language,
         "--skip-download",
         "-o",
         `${videoId}.%(ext)s`,
@@ -150,6 +192,12 @@ async function downloadSubtitleKind({
     if (!subtitle) return undefined;
 
     const filePath = path.join(videoDir, subtitle);
+    logs.push({
+      stage: kind === "manual" ? "manual-captions" : "auto-captions",
+      status: "success",
+      message: `Downloaded ${kind} subtitle file: ${subtitle}`,
+    });
+
     return {
       filePath,
       contents: await readFile(filePath, "utf8"),
@@ -207,4 +255,16 @@ export function assertTimestampedTranscription(
   if (invalid) {
     throw new Error(`Transcription segment ${invalid.id} has invalid timestamps.`);
   }
+}
+
+export function buildTextOnlyTranscript(transcription: UnifiedTranscription) {
+  return transcription.segments.map((segment) => segment.text).join("\n");
+}
+
+export function segmentsForMatching(transcription: UnifiedTranscription) {
+  return transcription.segments.map((segment) => ({
+    start: segment.start,
+    end: segment.end,
+    text: segment.text,
+  }));
 }

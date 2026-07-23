@@ -5,7 +5,6 @@ import {
   normalizeSmallestResponse,
 } from "./normalize";
 import type {
-  SttProviderName,
   UnifiedTranscription,
   ViralGenerationLog,
 } from "./types";
@@ -13,23 +12,15 @@ import type {
 type TranscribeOptions = {
   audioPath: string;
   language: string;
-  selectedProvider: SttProviderName;
-  allowFallback: boolean;
   logs: ViralGenerationLog[];
 };
 
 export async function transcribeWithProviderQueue({
-  allowFallback,
   audioPath,
   language,
   logs,
-  selectedProvider,
 }: TranscribeOptions): Promise<UnifiedTranscription> {
-  const providers = allowFallback
-    ? selectedProvider === "sarvam"
-      ? ["sarvam", "smallest"]
-      : ["smallest", "sarvam"]
-    : [selectedProvider];
+  const providers = ["sarvam", "smallest"] as const;
 
   const failures: string[] = [];
 

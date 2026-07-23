@@ -14,7 +14,12 @@ export function buildTimeline(
   phrases: PhraseScore[],
   targetDuration = 30,
 ): CutInstruction[] {
-  const sorted = [...phrases].sort((a, b) => b.score - a.score);
+  const normalizedScore = (phrase: PhraseScore) =>
+    phrase.score > 1 ? phrase.score / 10 : phrase.score;
+
+  const sorted = [...phrases].sort(
+    (a, b) => normalizedScore(b) - normalizedScore(a),
+  );
   const selected: PhraseScore[] = [];
   let duration = 0;
 

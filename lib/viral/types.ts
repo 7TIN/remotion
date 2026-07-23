@@ -45,14 +45,20 @@ export type CaptionTranscriptSegment = {
   text: string;
 };
 
-export type PhraseScore = {
-  segmentId: number;
+export type AiPhraseSelection = {
   text: string;
-  start: number;
-  end: number;
   score: number;
   category: ViralCategory;
-  reasoning: string;
+};
+
+export type PhraseScore = AiPhraseSelection & {
+  start: number;
+  end: number;
+  startIndex: number;
+  endIndex: number;
+  matchScore: number;
+  matchedText: string;
+  matched: boolean;
 };
 
 export type CutInstruction = {
@@ -71,11 +77,7 @@ export type CutInstruction = {
 export type ViralGenerateOptions = {
   inputUrl: string;
   language: string;
-  sttProvider: SttProviderName;
-  allowProviderFallback: boolean;
-  preferYoutubeCaptions: boolean;
   targetDuration: number;
-  geminiModel: string;
 };
 
 export type ViralGenerationLog = {
@@ -91,10 +93,38 @@ export type ViralGenerationResult = {
   options: ViralGenerateOptions;
   transcriptPath: string;
   transcription: UnifiedTranscription;
+  textTranscriptPath: string;
+  segmentsPath: string;
+  selectedPhrasesPath: string;
+  clipsPath: string;
   captionTranscript: CaptionTranscriptSegment[];
+  aiSelections: AiPhraseSelection[];
   selectedPhrases: PhraseScore[];
   timeline: CutInstruction[];
   logs: ViralGenerationLog[];
+};
+
+export type ViralJobStatus =
+  | "pending"
+  | "captions"
+  | "transcribing"
+  | "scoring"
+  | "matching"
+  | "saving"
+  | "done"
+  | "error";
+
+export type ViralJob = {
+  jobId: string;
+  status: ViralJobStatus;
+  progress: number;
+  inputUrl: string;
+  options: ViralGenerateOptions;
+  videoId?: string;
+  result?: ViralGenerationResult;
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type SmallestPulseResponse = {

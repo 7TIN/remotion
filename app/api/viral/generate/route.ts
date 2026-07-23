@@ -1,5 +1,5 @@
-import { generateViralClipPlan } from "@/lib/viral/generator";
-import type { SttProviderName } from "@/lib/viral/types";
+import { runViralJob } from "@/lib/viral/generator";
+import { readViralJob, saveViralJob } from "@/lib/viral/storage";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -7,25 +7,34 @@ export const maxDuration = 300;
 
 const requestSchema = z.object({
   inputUrl: z.string().url(),
-  language: z.string().min(2).default("auto"),
-  sttProvider: z.enum(["sarvam", "smallest"]).default("sarvam"),
-  allowProviderFallback: z.boolean().default(true),
-  preferYoutubeCaptions: z.boolean().default(true),
+  language: z.string().min(2).default("en"),
   targetDuration: z.number().min(10).max(60).default(30),
-  geminiModel: z.string().min(1).default("gemini-3.5-flash"),
 });
 
 export async function POST(request: Request) {
   try {
     const parsed = requestSchema.parse(await request.json());
-    const result = await generateViralClipPlan({
-      ...parsed,
-      sttProvider: parsed.sttProvider as SttProviderName,
+    const jobId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    await saveViralJob({
+      jobId,
+      status: "pending",
+      progress: 0,
+      inputUrl: parsed.inputUrl,
+      options: parsed,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    void runViralJob(jobId, parsed).catch((error) => {
+      console.error(`Viral job ${jobId} failed`, error);
     });
 
     return Response.json({
       ok: true,
-      result,
+      jobId,
+      status: "pending",
     });
   } catch (error) {
     const message = readErrorMessage(error);
