@@ -48,3 +48,11 @@ public/back.jpg
 public/test.webm
 
 vid.txt
+
+
+# captions-clips.json
+captions-*.json
+captions.*.vtt
+captions-*.txt
+
+clips
