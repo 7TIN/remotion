@@ -73,7 +73,6 @@ export const ViralClipGenerator = () => {
 
   const pollJob = (jobId: string) => {
     stopPolling();
-c
     pollRef.current = window.setInterval(async () => {
       try {
         const response = await fetch(`/api/viral/status?jobId=${jobId}`);
