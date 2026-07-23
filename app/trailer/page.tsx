@@ -17,15 +17,27 @@ type ClipData = {
 
 async function loadClipDurations(): Promise<number[]> {
   const filePath = path.join(process.cwd(), "captions-clips.json");
-  const raw = await readFile(filePath, "utf8");
-  const clips = (JSON.parse(raw) as ClipData[]).filter(
-    (clip) =>
-      typeof clip.start === "number" &&
-      typeof clip.end === "number" &&
-      clip.end > clip.start,
-  );
+  try {
+    const raw = await readFile(filePath, "utf8");
+    const clips = (JSON.parse(raw) as ClipData[]).filter(
+      (clip) =>
+        typeof clip.start === "number" &&
+        typeof clip.end === "number" &&
+        clip.end > clip.start,
+    );
 
-  return clips.map((clip) => clip.end - clip.start);
+    return clips.map((clip) => clip.end - clip.start);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error as { code?: string }).code === "ENOENT"
+    ) {
+      console.warn(`captions-clips.json not found at build time: ${filePath}`);
+      return [];
+    }
+
+    throw error;
+  }
 }
 
 export default async function TrailerPage() {
