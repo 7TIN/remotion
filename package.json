@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:webpack": "next dev --webpack",
     "render-server": "bun scripts/render-server.mjs",
     "transcript:generate": "bun scripts/generate-caption-transcript.ts",
     "build": "next build",
@@ -21,6 +22,7 @@
     "@remotion/transitions": "4.0.469",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "fastest-levenshtein": "^1.0.16",
     "lucide-react": "^1.17.0",
     "mediabunny": "^1.49.0",
     "next": "16.2.6",

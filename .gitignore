@@ -47,4 +47,14 @@ public/foreground_*
 public/back.jpg
 public/test.webm
 
+public/clips
 vid.txt
+
+
+# captions-clips.json
+captions-*.json
+captions.*.vtt
+captions-*.txt
+
+clips
+storage

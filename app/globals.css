@@ -146,7 +146,7 @@
 }
 
 
-@utility font-jakarta {
+/* @utility font-jakarta {
   font-family: var(--font-jakarta);
 }
 
@@ -165,7 +165,7 @@
 @utility font-anton {
   font-family: var(--font-anton);
 }
-/* 
+
 @utility font-playfair {
   font-family: var(--font-playfair);
 }
