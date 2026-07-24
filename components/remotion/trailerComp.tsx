@@ -3,7 +3,6 @@ import React from "react";
 import {
   AbsoluteFill,
   OffthreadVideo,
-  staticFile,
 } from "remotion";
 import {
   TransitionSeries,
@@ -13,14 +12,8 @@ import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
 import { flip } from "@remotion/transitions/flip";
-import clipsJson from "@/captions-clips.json";
 
 // ── Types ──────────────────────────────────────────────
-interface ClipData {
-  start: number;
-  end: number;
-  [key: string]: unknown;
-}
 
 export interface VideoSeriesCompProps {
   clipSources?: string[];
@@ -28,6 +21,10 @@ export interface VideoSeriesCompProps {
 }
 
 import type {TransitionPresentation} from "@remotion/transitions";
+import {
+  clampDuration,
+  COMP_FPS,
+} from "./trailerConfig";
 
 type AnyTransitionPresentation = TransitionPresentation<Record<string, unknown>>;
 
@@ -54,36 +51,14 @@ function getTransition(index: number): AnyTransitionPresentation {
 }
 
 // ── Config ─────────────────────────────────────────────
-export const COMP_FPS = 24;
-export const COMP_WIDTH = 1920;
-export const COMP_HEIGHT = 1080;
-
 const TRANSITION_FRAMES = 6; // 0.25s quick cuts
 
 // ── Build clip list from JSON timestamps ───────────────
-const clips: ClipData[] = (clipsJson as ClipData[]).filter(
-  (c) => typeof c.start === "number" && typeof c.end === "number"
-);
-
-// const pwd = process.cwd()
-
-const DEFAULT_CLIPS = clips.map((clip, i) => ({
-  id: i + 1,
-  src: staticFile(`clips/${i + 1}.mp4`),
-  durationInFrames: Math.ceil((clip.end - clip.start) * COMP_FPS),
-}));
-
-function clampDuration(duration: number) {
-  return Math.max(1, Math.round(duration * COMP_FPS));
-}
+// `VideoSeriesComp` receives clip durations from the page at runtime.
+const DEFAULT_CLIPS: Array<{ id: number; src: string; durationInFrames: number }> = [];
 
 // ── Total composition duration ─────────────────────────
 // Transitions overlap adjacent clips, so subtract their durations
-export const TOTAL_FRAMES = DEFAULT_CLIPS.reduce(
-  (sum, c) => sum + c.durationInFrames,
-  0,
-) - Math.max(0, DEFAULT_CLIPS.length - 1) * TRANSITION_FRAMES;
-
 export function computeTotalFrames(clipDurations?: number[]) {
   const durations = clipDurations?.length
     ? clipDurations.map(clampDuration)

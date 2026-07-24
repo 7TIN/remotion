@@ -58,3 +58,5 @@ captions-*.txt
 
 clips
 storage
+.vercel
+.env*

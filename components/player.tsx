@@ -109,6 +109,7 @@ export const PlayerComp = ({ captionInputProps }: PlayerCompProps) => {
           stylePreset: "aesthetic",
           ...captionInputProps,
         }}
+        acknowledgeRemotionLicense
         component={CaptionComp}
         durationInFrames={totalFrames}
         compositionWidth={1080}

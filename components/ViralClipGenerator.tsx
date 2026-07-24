@@ -11,12 +11,14 @@ import {
 import { Player } from "@remotion/player";
 import { useEffect, useRef, useState } from "react";
 import {
+  VideoSeriesComp,
+} from "@/components/remotion/trailerComp";
+import {
   COMP_FPS,
   COMP_HEIGHT,
   COMP_WIDTH,
-  VideoSeriesComp,
   computeTotalFrames,
-} from "@/components/remotion/trailerComp";
+} from "@/components/remotion/trailerConfig";
 
 type FormState = {
   inputUrl: string;
@@ -364,6 +366,7 @@ export const ViralClipGenerator = () => {
                         clipDurations: result.clipDurations,
                       }}
                       durationInFrames={computeTotalFrames(result.clipDurations)}
+                      acknowledgeRemotionLicense
                       compositionWidth={COMP_WIDTH}
                       compositionHeight={COMP_HEIGHT}
                       fps={COMP_FPS}
