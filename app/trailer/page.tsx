@@ -45,24 +45,38 @@ export default async function TrailerPage() {
   const clipSources = clipDurations.map(
     (_, index) => `/clips/${index + 1}.mp4`,
   );
-  const durationInFrames = computeTotalFrames(clipDurations);
+  const durationInFrames = Math.max(
+    1,
+    clipDurations.length > 0 ? computeTotalFrames(clipDurations) : COMP_FPS,
+  );
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black font-mono">
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <Player
-          acknowledgeRemotionLicense
-          component={VideoSeriesComp}
-          durationInFrames={durationInFrames}
-          compositionWidth={COMP_WIDTH}
-          compositionHeight={COMP_HEIGHT}
-          fps={COMP_FPS}
-          controls
-          inputProps={{ clipSources, clipDurations }}
-          style={{
-            width: "100%",
-          }}
-        />
+        {clipDurations.length > 0 ? (
+          <Player
+            acknowledgeRemotionLicense
+            component={VideoSeriesComp}
+            durationInFrames={durationInFrames}
+            compositionWidth={COMP_WIDTH}
+            compositionHeight={COMP_HEIGHT}
+            fps={COMP_FPS}
+            controls
+            inputProps={{ clipSources, clipDurations }}
+            style={{
+              width: "100%",
+            }}
+          />
+        ) : (
+          <div className="rounded-lg border border-zinc-200 bg-white p-10 text-center text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+            <h1 className="mb-3 text-2xl font-semibold">Trailer preview unavailable</h1>
+            <p className="text-sm leading-6">
+              No clip metadata was available at build time. Add a generated
+              `captions-clips.json` file or run the clip generation pipeline
+              before building again.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
